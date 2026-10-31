@@ -1,0 +1,67 @@
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Gradle
+.gradle/
+.gradle-temp/
+**/.gradle-temp/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+local.properties
+
+# Local machine configuration (contains local SDK paths)
+local.properties
+
+# Android build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Signing files and credentials - never commit these
+*.jks
+*.keystore
+key.properties
+
+# Native build outputs
+.externalNativeBuild/
+.cxx/
+
+# Kotlin
+.kotlin/
+
+# Generated files
+captures/
+.output/
+.navigation/
+output-metadata.json
+bin/
+gen/
+out/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+
+test-results/
+coverage/
+
+# Google Services configuration may contain project-specific credentials
+# Remove this rule only if your team intentionally versions this file
+# google-services.json
