@@ -1,0 +1,17 @@
+Pathwise UI test environment
+Test date: 1 November 2026 (Africa/Blantyre)
+Device type: physical Android handset; no emulator used
+Manufacturer: Xiaomi
+Model: 25078RA3EA
+Android: 15 (API 35)
+ADB serial: 8XHQFEHA4DZ9FIS8
+App package: com.pathfinder.app
+Installed package: versionName 1.0, versionCode 1, minSdk 24, targetSdk 35
+Requested build variant: debug
+Project compileSdk: 36; project minSdk: 24 (Android 7.0/API 24 minimum)
+Current build result: assembleDebug succeeded; app-debug.apk was produced.
+Device launch result: com.pathfinder.app/.MainActivity started with Status: ok and was observed as topResumedActivity.
+Install result: Gradle installDebug returned INSTALL_FAILED_USER_RESTRICTED: Install canceled by user. The installed package remained available and was launched; the newly built APK update was not confirmed installed.
+Automation: Maestro was not found on PATH. No Android instrumentation test dependencies or androidTest sources are configured.
+Input restriction: adb shell input keyevent was denied by Android with SecurityException: Injecting input events requires the caller ... to have the INJECT_EVENTS permission.
+No account, bookmark, or assessment result was created or edited during this run. The app's normal startup can seed the default catalogue if its database was empty; no existing user data was cleared.

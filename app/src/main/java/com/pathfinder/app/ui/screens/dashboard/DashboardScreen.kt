@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.ui.components.*
-import com.pathfinder.app.ui.theme.DashboardColors.*
+
 
 import com.pathfinder.app.ui.screens.admin.AdminDashboardScreen
 import com.pathfinder.app.ui.screens.assessment.AssessmentScreen
@@ -107,7 +107,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 })
                       else->HomeScreen(pad,{
                     onNavigate("Saved")
-                },notify,{
+            },notify,{
                     category->onNavigate(category)
                 },savedTitles,onToggleSave,{
                     onNavigate("Quiz")
@@ -115,7 +115,9 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                     title,sub,cat->onOpenDetails(title,sub,cat,"Home")
                 },{
                     onNavigate("Profile")
-                })
+            },{
+                onNavigate("Explore")
+            })
             }
 
         }

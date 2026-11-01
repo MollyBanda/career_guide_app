@@ -18,12 +18,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.ui.components.*
-import com.pathfinder.app.ui.theme.DashboardColors.*
+import com.pathfinder.app.ui.theme.DashboardColors.Ink
+import com.pathfinder.app.ui.theme.DashboardColors.Muted
+import com.pathfinder.app.ui.theme.DashboardColors.Blue
+import com.pathfinder.app.ui.theme.DashboardColors.Line
+import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 
 
 @Composable fun HomeScreen(pad:PaddingValues,openSaved:()->Unit,notify:(String)->Unit,openCategory:(String)->Unit,
     savedTitles:Set<String>,onToggleSave:(String)->Unit,startQuiz:()->Unit,onOpenDetails:(String,String,String)->Unit,
-    onProfile:()->Unit){
+    onProfile:()->Unit,openExplore:()->Unit){
 
      Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).background(Canvas).padding(horizontal=16.dp,
         vertical=11.dp)){
@@ -74,7 +78,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.*
             Spacer(Modifier.width(5.dp))
             Text("Your top career match",color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Text("See all ›",color=Blue,fontSize=10.sp)
+            Text("See all ›",Modifier.clickable(onClick=openExplore).padding(horizontal=8.dp,vertical=6.dp),color=Blue,fontSize=10.sp)
         }
 
            Surface(Modifier.clickable{

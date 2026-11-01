@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function trustedAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    match /users/{uid} {
+      allow read: if ownsUser(uid);
+      allow create: if ownsUser(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.fullName is string
+        && request.resource.data.role in ['Student', 'Counsellor', 'Admin']
+        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'createdAt', 'updatedAt']);
+      allow update: if ownsUser(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.fullName is string
+        && request.resource.data.updatedAt is int
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'updatedAt']);
+      allow delete: if false;
+
+      match /savedItems/{itemId} {
+        allow read, delete: if ownsUser(uid);
+        allow create: if ownsUser(uid)
+          && request.resource.data.itemId == itemId
+          && request.resource.data.title is string
+          && request.resource.data.category in ['Careers', 'Scholarships', 'Universities', 'Training', 'Internships']
+          && request.resource.data.savedAt is int
+          && request.resource.data.keys().hasOnly(['itemId', 'title', 'category', 'savedAt']);
+        allow update: if false;
+      }
+
+      match /assessments/{assessmentId} {
+        allow read: if ownsUser(uid);
+        allow create: if ownsUser(uid)
+          && request.resource.data.assessmentId == assessmentId
+          && request.resource.data.answers is list
+          && request.resource.data.answers.size() == 5
+          && request.resource.data.resultSummary is string
+          && request.resource.data.completedAt is int
+          && request.resource.data.recommendations is list
+          && request.resource.data.keys().hasOnly(['assessmentId', 'resultSummary', 'answers', 'completedAt', 'recommendations']);
+        allow update, delete: if false;
+      }
+
+      match /recommendations/{recommendationId} {
+        allow read: if ownsUser(uid);
+        allow create: if ownsUser(uid)
+          && request.resource.data.assessmentId == recommendationId
+          && request.resource.data.careerPaths is list
+          && request.resource.data.createdAt is int
+          && request.resource.data.keys().hasOnly(['assessmentId', 'careerPaths', 'createdAt']);
+        allow update, delete: if false;
+      }
+    }
+
+    match /careers/{recordId} {
+      allow read: if signedIn();
+      allow write: if trustedAdmin();
+    }
+    match /universities/{recordId} {
+      allow read: if signedIn();
+      allow write: if trustedAdmin();
+    }
+    match /scholarships/{recordId} {
+      allow read: if signedIn();
+      allow write: if trustedAdmin();
+    }
+    match /training/{recordId} {
+      allow read: if signedIn();
+      allow write: if trustedAdmin();
+    }
+    match /internships/{recordId} {
+      allow read: if signedIn();
+      allow write: if trustedAdmin();
+    }
+  }
+}

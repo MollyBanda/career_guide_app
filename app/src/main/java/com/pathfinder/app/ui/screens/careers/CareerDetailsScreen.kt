@@ -18,7 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.ui.components.*
-import com.pathfinder.app.ui.theme.DashboardColors.*
+import com.pathfinder.app.ui.theme.DashboardColors.Ink
+import com.pathfinder.app.ui.theme.DashboardColors.Muted
+import com.pathfinder.app.ui.theme.DashboardColors.Blue
+import com.pathfinder.app.ui.theme.DashboardColors.Line
+import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 
 
 private data class CareerProfile(val overview:String,val qualifications:String,val courses:String,val skills:String,
@@ -177,7 +181,9 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
         if(storedItem.pathways.isNotBlank()) InfoSection("Pathways",storedItem.pathways)
         if(storedItem.requirements.isNotBlank()) InfoSection("Requirements and eligibility",storedItem.requirements)
         if(storedItem.duration.isNotBlank()) InfoSection("Duration",storedItem.duration)
-        if(storedItem.deadline.isNotBlank()) InfoSection("Deadline",storedItem.deadline)
+        if(storedItem.deadline.isNotBlank() && !(category=="Scholarships" && title.contains("Commonwealth",true))) {
+            InfoSection("Deadline",storedItem.deadline)
+        }
         if(storedItem.applicationUrl.isNotBlank()) InfoSection("Application link",storedItem.applicationUrl)
      }
      if(category=="Scholarships" && title.contains("Commonwealth",true)){
@@ -191,7 +197,9 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
                     if(careerProfile!=null){
 
                          InfoSection("Role overview",careerProfile.overview)
-                         InfoSection("Qualifications",careerProfile.qualifications)
+                         if (storedItem?.qualifications.isNullOrBlank()) {
+                             InfoSection("Qualifications",careerProfile.qualifications)
+                         }
                          InfoSection("Suggested courses",careerProfile.courses)
                          InfoSection("Skills needed",careerProfile.skills)
                          InfoSection("Career pathways",careerProfile.pathways)

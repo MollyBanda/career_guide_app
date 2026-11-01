@@ -1,0 +1,11 @@
+Test Case ID: CG_SYS_001 (additional launch smoke test)
+Status: PASS
+Expected: MainActivity opens in the foreground and displays the Pathwise app window.
+Actual: ADB returned Status: ok; MainActivity was resumed; UI hierarchy contains com.pathfinder.app.
+Device serial: 8XHQFEHA4DZ9FIS8
+Device model: 25078RA3EA
+Android version/API: 15 / 35
+Package: com.pathfinder.app
+Build variant under test: debug package already installed on device; this script does not install or clear app data. Normal app startup may seed the default catalogue if the database is empty.
+Screenshot: C:\Users\comlab1\Documents\career_guide_app\testing\automation\..\evidence\CG_SYS_001_launch.png
+UI hierarchy: C:\Users\comlab1\Documents\career_guide_app\testing\automation\..\evidence\CG_SYS_001_launch_hierarchy.xml

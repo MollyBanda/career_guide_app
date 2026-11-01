@@ -1,0 +1,9 @@
+UI automation blocker evidence
+
+Command attempted: adb shell input keyevent KEYCODE_HOME
+Device response: java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+
+Install attempt: Gradle installDebug
+Device response: INSTALL_FAILED_USER_RESTRICTED: Install canceled by user.
+
+ADB can enumerate the device, launch the already-installed package, capture screenshots, and dump the UI hierarchy. ADB cannot inject a tap/key event. No UI journey steps were performed. The original test cases are therefore BLOCKED rather than PASS or FAIL. No account, bookmark, or assessment data was created or edited. Normal startup may seed the default catalogue if it was empty; no existing user data was cleared.

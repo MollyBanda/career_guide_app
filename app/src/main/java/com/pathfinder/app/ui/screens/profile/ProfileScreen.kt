@@ -18,7 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.ui.components.*
-import com.pathfinder.app.ui.theme.DashboardColors.*
+import com.pathfinder.app.ui.theme.DashboardColors.Ink
+import com.pathfinder.app.ui.theme.DashboardColors.Muted
+import com.pathfinder.app.ui.theme.DashboardColors.Blue
+import com.pathfinder.app.ui.theme.DashboardColors.Line
+import com.pathfinder.app.ui.theme.DashboardColors.Canvas
+import com.pathfinder.app.data.validation.PathwiseInputValidation
 
 
 @Composable fun ProfileScreen(pad:PaddingValues,onLogout:()->Unit,notify:(String)->Unit,initialName:String,
@@ -60,11 +65,11 @@ import com.pathfinder.app.ui.theme.DashboardColors.*
                     OutlinedButton(onClick={
                         if(editing.value){
                             when{
-                                displayName.value.isBlank()->notify("Please fill all fields.")
-                                !displayEmail.value.contains("@")->notify("Enter a valid email address.")
+                                PathwiseInputValidation.profileNameError(displayName.value) != null ->
+                                    notify(PathwiseInputValidation.profileNameError(displayName.value)!!)
+                                !PathwiseInputValidation.isValidEmail(displayEmail.value)->notify("Enter a valid email address.")
                                 else->{
                                     onProfileUpdated(displayName.value.trim(),displayEmail.value.trim())
-                                    notify("Profile updated successfully.")
                                     editing.value=false
                                 }
                             }
@@ -89,7 +94,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.*
                         displayEmail.value=it
                     },modifier=Modifier.fillMaxWidth(),singleLine=true,label={
                         Text("Email",fontSize=10.sp)
-                    },textStyle=LocalTextStyle.current.copy(fontSize=12.sp))
+                    },readOnly=true,textStyle=LocalTextStyle.current.copy(fontSize=12.sp))
                 }
 
             }

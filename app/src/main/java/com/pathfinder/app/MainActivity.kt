@@ -17,7 +17,11 @@ class MainActivity : ComponentActivity() {
                 android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         setContent {
             PathwiseTheme {
-                PathwiseApp { message -> Toast.makeText(this, message, Toast.LENGTH_SHORT).show() }
+                PathwiseApp { message ->
+                    runOnUiThread {
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }

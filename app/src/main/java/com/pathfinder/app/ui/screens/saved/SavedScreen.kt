@@ -18,7 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.ui.components.*
-import com.pathfinder.app.ui.theme.DashboardColors.*
+import com.pathfinder.app.ui.theme.DashboardColors.Ink
+import com.pathfinder.app.ui.theme.DashboardColors.Muted
+import com.pathfinder.app.ui.theme.DashboardColors.Blue
+import com.pathfinder.app.ui.theme.DashboardColors.Line
+import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 
 
 @Composable fun SavedScreen(

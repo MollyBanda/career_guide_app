@@ -26,6 +26,7 @@ import com.pathfinder.app.ui.theme.AuthColors.Border
 import com.pathfinder.app.ui.theme.AuthColors.Muted
 import com.pathfinder.app.ui.theme.AuthColors.Navy
 import com.pathfinder.app.ui.components.PrimaryButton
+import com.pathfinder.app.data.validation.PathwiseInputValidation
 
 @Composable
 private fun Header(back: () -> Unit, title: String) {
@@ -38,13 +39,14 @@ private fun Header(back: () -> Unit, title: String) {
     }
 }
 @Composable
-fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit, onAuthenticated: (String, String, String) -> Unit) {
+fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit, onAuthenticated: (String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var level by remember { mutableStateOf("College / Uni") }
+    var accountRole by remember { mutableStateOf("Student") }
     var terms by remember { mutableStateOf(false) }
     var alerts by remember { mutableStateOf(true) }
 
@@ -66,6 +68,22 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
             KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
         FormField("Confirm Password", confirmPassword, { confirmPassword = it }, "Re-enter your password", Icons.Default.Lock,
             KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
+        Text("Account type", Modifier.padding(top = 8.dp, bottom = 6.dp), color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            PathwiseInputValidation.registrationRoles.forEach { option ->
+                val selected = accountRole == option
+                Surface(
+                    modifier = Modifier.weight(1f).height(38.dp).clickable { accountRole = option },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) Color(0xFFF0F3FF) else Color.White,
+                    border = BorderStroke(1.dp, if (selected) Blue else Border)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(option, color = if (selected) Blue else Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
         val strength = when {
             password.isEmpty() -> "ADD A PASSWORD"
             password.length < 6 -> "WEAK PASSWORD"
@@ -100,13 +118,13 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
         ConsentRow(alerts, { alerts = it }, "Send me personalized scholarship alerts & curated career insights.")
         Spacer(Modifier.height(5.dp))
         PrimaryButton("Create Account") {
-            when {
-                name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> notify("Please fill all fields.")
-                !email.contains("@") -> notify("Enter a valid email address.")
-                password.length < 6 -> notify("Password must be at least 6 characters.")
-                password != confirmPassword -> notify("Passwords do not match.")
-                !terms -> notify("Please agree to the Terms of Service and Privacy Policy.")
-                else -> { notify("Account created successfully."); onAuthenticated(name.trim(), email.trim(), password) }
+            val validationError = PathwiseInputValidation.registrationError(
+                name, email, password, confirmPassword, terms
+            )
+            if (validationError != null) {
+                notify(validationError)
+            } else {
+                onAuthenticated(name.trim(), email.trim(), password, accountRole)
             }
         }
         SwitchLine("Already have an account?", "Log in", signIn)
@@ -115,7 +133,13 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
 }
 
 @Composable
-fun SignInScreen(back: () -> Unit, create: () -> Unit, notify: (String) -> Unit, onLogin: (String, String, String) -> Unit) {
+fun SignInScreen(
+    back: () -> Unit,
+    create: () -> Unit,
+    notify: (String) -> Unit,
+    onLogin: (String, String, String) -> Unit,
+    onForgotPassword: (String) -> Unit = {}
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -156,14 +180,18 @@ fun SignInScreen(back: () -> Unit, create: () -> Unit, notify: (String) -> Unit,
                     colors = CheckboxDefaults.colors(checkedColor = Blue))
                 Text("Remember me", color = Muted, fontSize = 12.sp)
             }
-            TextButton(onClick = { notify("If this email is registered, password reset instructions will be sent.") },
+            TextButton(onClick = {
+                if (email.contains("@")) onForgotPassword(email.trim())
+                else notify("Enter the email address for your account first.")
+            },
                 contentPadding = PaddingValues(0.dp)) {
                 Text("Forgot password?", color = Blue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         PrimaryButton("Login") {
             when {
-                !email.contains("@") || password.isBlank() -> notify("Enter a valid email address and password.")
+                PathwiseInputValidation.loginError(email, password) != null ->
+                    notify(PathwiseInputValidation.loginError(email, password)!!)
                 else -> onLogin(email.trim(), password, role)
             }
         }
