@@ -108,7 +108,6 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                         Text(title,color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
                         Text(subtitle,color=Muted,fontSize=10.sp)
                     }
-                    Icon(Icons.Filled.ChevronRight,contentDescription="View $title",tint=Muted)
                 }
 
             }

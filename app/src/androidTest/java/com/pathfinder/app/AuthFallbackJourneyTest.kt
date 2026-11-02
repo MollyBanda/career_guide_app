@@ -27,10 +27,10 @@ class AuthFallbackJourneyTest {
             composeRule.onNodeWithContentDescription("Profile").performClick()
             composeRule.onNodeWithText("Log out").performScrollTo().performClick()
         }
-        if (hasText("Welcome back! 👋")) composeRule.onNodeWithText("Back").performClick()
+        if (hasText("Welcome back!")) composeRule.onNodeWithText("Back").performClick()
         if (hasText("Find the path that feels like you.")) {
             composeRule.onNodeWithText("Create my account").performClick()
-        } else if (hasText("Welcome back! 👋")) {
+        } else if (hasText("Welcome back!")) {
             composeRule.onNodeWithText("Create Account").performClick()
         }
 
@@ -48,7 +48,7 @@ class AuthFallbackJourneyTest {
 
         composeRule.onNodeWithContentDescription("Profile").performClick()
         composeRule.onNodeWithText("Log out").performScrollTo().performClick()
-        composeRule.onNodeWithText("Welcome back! 👋").assertExists()
+        composeRule.onNodeWithText("Welcome back!").assertExists()
         val loginFields = composeRule.onAllNodes(hasSetTextAction())
         loginFields[0].performTextInput(email)
         loginFields[1].performTextInput(password)

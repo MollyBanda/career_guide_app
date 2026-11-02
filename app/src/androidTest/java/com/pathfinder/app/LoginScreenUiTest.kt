@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
 class LoginScreenUiTest {
     @get:Rule val composeRule = createComposeRule()
 
-    @Test fun loginSubmitsTheSelectedRoleWithCredentials() {
+    @Test fun loginSubmitsCredentialsWithoutAskingForRole() {
         var submitted: List<String>? = null
         composeRule.setContent {
             PathwiseTheme {
@@ -28,9 +28,14 @@ class LoginScreenUiTest {
         val fields = composeRule.onAllNodes(hasSetTextAction())
         fields[0].performTextInput("counsellor@example.com")
         fields[1].performTextInput("Career123")
-        composeRule.onNodeWithText("Counsellor").performClick()
+        composeRule.onNodeWithText("Student").assertDoesNotExist()
+        composeRule.onNodeWithText("Counsellor").assertDoesNotExist()
+        composeRule.onNodeWithText("Admin").assertDoesNotExist()
+        composeRule.onNodeWithText("Data Science Explorer").assertDoesNotExist()
+        composeRule.onNodeWithText("256-bit SSL encrypted & secure").assertDoesNotExist()
+        composeRule.onNodeWithText("Welcome back!").assertExists()
         composeRule.onNodeWithText("Login").performClick()
-        composeRule.runOnIdle { assertEquals(listOf("counsellor@example.com", "Career123", "Counsellor"), submitted) }
+        composeRule.runOnIdle { assertEquals(listOf("counsellor@example.com", "Career123", ""), submitted) }
     }
 
     @Test fun loginNavigationAndPasswordResetActionsReachTheirHandlers() {

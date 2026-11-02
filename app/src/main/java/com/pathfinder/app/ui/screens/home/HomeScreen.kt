@@ -60,7 +60,6 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                              Column(Modifier.padding(9.dp)){
                             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
                                 FeatureIcon(item.first)
-                                Text("›",color=Muted)
                             }
 
                                  Text(item.second,Modifier.padding(top=5.dp),color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
@@ -78,7 +77,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
             Spacer(Modifier.width(5.dp))
             Text("Your top career match",color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Text("See all ›",Modifier.clickable(onClick=openExplore).padding(horizontal=8.dp,vertical=6.dp),color=Blue,fontSize=10.sp)
+            Text("See all",Modifier.clickable(onClick=openExplore).padding(horizontal=8.dp,vertical=6.dp),color=Blue,fontSize=10.sp)
         }
 
            Surface(Modifier.clickable{
@@ -93,18 +92,15 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                         Text("UX Designer",color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
                         Text("Design & Technology",color=Muted,fontSize=10.sp)
                     }
-                    Label("94%",Color(0xFFD8F7F1),Color(0xFF007C78))
                 }
 
-                   Text("↗  +16% Growth                        ◉  $78k–$120k",Modifier.padding(top=8.dp),color=Muted,
-                    fontSize=10.sp)
             }
         }
 
            Row(Modifier.fillMaxWidth().padding(top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically){
             Text("Opportunities for you",color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Text("View more ›",Modifier.clickable(onClick=openSaved),color=Blue,fontSize=10.sp)
+            Text("View more",Modifier.clickable(onClick=openSaved),color=Blue,fontSize=10.sp)
         }
 
             Opportunity("scholarship","Future Leaders Scholarship","Full tuition · Scholarship",{
@@ -126,7 +122,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 
                     Button(onClick=startQuiz,contentPadding=PaddingValues(horizontal=11.dp,vertical=5.dp),
                     shape=CircleShape,colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Blue)){
-                    Text("Start Quiz  →",fontSize=10.sp,fontWeight=FontWeight.Bold)
+                    Text("Start Quiz",fontSize=10.sp,fontWeight=FontWeight.Bold)
                 }
 
             }

@@ -13,6 +13,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,8 +28,16 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
 
 
 @Composable fun ProfileScreen(pad:PaddingValues,onLogout:()->Unit,notify:(String)->Unit,initialName:String,
-    initialEmail:String,onOpenDetails:(String,String)->Unit,onProfile:()->Unit,onProfileUpdated:(String,String)->Unit,latestAssessment:AssessmentResultEntity?){
+    initialEmail:String,onOpenDetails:(String,String)->Unit,onProfile:()->Unit,onProfileUpdated:(String,String)->Unit,
+    latestAssessment:AssessmentResultEntity?,savedTitles:Set<String> = emptySet(),onOpenSaved:()->Unit = {}){
 
+     val context = LocalContext.current
+     val profileFields = remember(initialEmail) { context.getSharedPreferences("pathwise_profile_fields", 0) }
+     val bio = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.bio", "").orEmpty()) }
+     val educationSkills = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.education_skills", "").orEmpty()) }
+     val careerPreferences = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.career_preferences", "").orEmpty()) }
+     var editingSection by remember { mutableStateOf<String?>(null) }
+     var sectionDraft by remember { mutableStateOf("") }
      val editing=remember {
          mutableStateOf(false)
     }
@@ -40,6 +49,8 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
      val displayEmail=remember(initialEmail) {
          mutableStateOf(initialEmail)
     }
+     val completionFields = listOf(displayName.value, displayEmail.value, bio.value, educationSkills.value, careerPreferences.value)
+     val completionPercent = completionFields.count { it.isNotBlank() } * 100 / completionFields.size
 
      Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).background(Canvas).padding(horizontal=16.dp,
         vertical=11.dp)){
@@ -59,7 +70,7 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
                     }
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)){
-                        Text("${displayName.value}  ✓",color=Ink,fontSize=14.sp,fontWeight=FontWeight.Bold)
+                        Text(displayName.value,color=Ink,fontSize=14.sp,fontWeight=FontWeight.Bold)
                         Text(displayEmail.value,color=Muted,fontSize=10.sp)
                     }
                     OutlinedButton(onClick={
@@ -111,19 +122,18 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
                         Text("MILESTONE PROGRESS",color=Blue,fontSize=10.sp,fontWeight=FontWeight.Bold)
                         Text("Profile strength",Modifier.padding(top=4.dp),color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
                     }
-                    Text("70%",color=Color(0xFF007C78),fontSize=22.sp,fontWeight=FontWeight.ExtraBold)
+                    Text("$completionPercent%",color=Color(0xFF007C78),fontSize=22.sp,fontWeight=FontWeight.ExtraBold)
                 }
 
                     LinearProgressIndicator(progress={
-                    0.70f
+                    completionPercent / 100f
                 },modifier=Modifier.fillMaxWidth().padding(top=7.dp),color=Color(0xFF008C82),trackColor=Color(0xFFD8F7F1))
                     Row(Modifier.fillMaxWidth().padding(top=8.dp),verticalAlignment=Alignment.CenterVertically){
-                    Text("Add your skills to improve career matches.",Modifier.weight(1f),color=Muted,fontSize=10.sp)
-                    TextButton(onClick={
-                        notify("Add your skills to improve your matches.")
-                    },contentPadding=PaddingValues(horizontal=7.dp,vertical=2.dp)){
-                        Text("+ Add 3 Skills",fontSize=10.sp)
-                    }
+                    Text(
+                        if (completionPercent == 100) "Your profile is complete."
+                        else "Complete your personal details, education, skills, and career preferences.",
+                        Modifier.weight(1f), color=Muted, fontSize=10.sp
+                    )
                 }
 
             }
@@ -143,20 +153,23 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
         Spacer(Modifier.height(14.dp))
 
         Text("ACCOUNT & GOALS",color=Blue,fontSize=10.sp,fontWeight=FontWeight.Bold)
-           ProfileRow("Personal information","Name, contact details, bio","person"){
-            onOpenDetails("Personal information","${displayName.value} · ${displayEmail.value}")
+           ProfileRow("Personal information",bio.value.ifBlank { "Name, contact details, bio" },"person"){
+            editingSection = "Personal information"
+            sectionDraft = bio.value
         }
 
-           ProfileRow("Education & skills","Degrees, certifications, languages","degree"){
-            onOpenDetails("Education & skills","Add your education, certifications, and languages.")
+           ProfileRow("Education & skills",educationSkills.value.ifBlank { "Degrees, certifications, languages" },"degree"){
+            editingSection = "Education & skills"
+            sectionDraft = educationSkills.value
         }
 
-           ProfileRow("Career preferences","Target roles, salary, locations","training"){
-            onOpenDetails("Career preferences","Choose target roles, salary expectations, and preferred locations.")
+           ProfileRow("Career preferences",careerPreferences.value.ifBlank { "Target roles, salary, locations" },"training"){
+            editingSection = "Career preferences"
+            sectionDraft = careerPreferences.value
         }
 
-           ProfileRow("Saved opportunities","${initialName}'s saved opportunities","scholarship"){
-            onOpenDetails("Saved opportunities","Your bookmarked careers, courses, and scholarships are shown on the Saved page.")
+           ProfileRow("Saved opportunities","${savedTitles.size} saved","scholarship"){
+            onOpenSaved()
         }
 
           Spacer(Modifier.height(10.dp))
@@ -170,9 +183,42 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
             Text("Log out",fontSize=11.sp,fontWeight=FontWeight.Bold)
         }
 
-          Text("PathFinder v2.4.0 · Built for your journey",Modifier.align(Alignment.CenterHorizontally).padding(top=12.dp),
-            color=Muted,fontSize=9.sp)
+          Spacer(Modifier.height(8.dp))
     }
+
+     editingSection?.let { section ->
+         val hint = when (section) {
+             "Personal information" -> "Add a short bio, phone number, or other contact details. Your email is shown on your profile."
+             "Education & skills" -> "Add degrees, certifications, skills, and languages. For example: BSc Computing; Kotlin; English and Chichewa."
+             else -> "Add target roles, preferred locations, salary range, or work preferences. For example: UX Designer; Lilongwe; remote or hybrid."
+         }
+         AlertDialog(
+             onDismissRequest = { editingSection = null },
+             title = { Text(section) },
+             text = {
+                 OutlinedTextField(
+                     value = sectionDraft,
+                     onValueChange = { sectionDraft = it },
+                     modifier = Modifier.fillMaxWidth(),
+                     placeholder = { Text(hint) },
+                     minLines = 3,
+                     maxLines = 6
+                 )
+             },
+             confirmButton = {
+                 TextButton(onClick = {
+                     when (section) {
+                         "Personal information" -> { bio.value = sectionDraft; profileFields.edit().putString("$initialEmail.bio", sectionDraft).apply() }
+                         "Education & skills" -> { educationSkills.value = sectionDraft; profileFields.edit().putString("$initialEmail.education_skills", sectionDraft).apply() }
+                         else -> { careerPreferences.value = sectionDraft; profileFields.edit().putString("$initialEmail.career_preferences", sectionDraft).apply() }
+                     }
+                     editingSection = null
+                     notify("$section saved on this device.")
+                 }) { Text("Save") }
+             },
+             dismissButton = { TextButton(onClick = { editingSection = null }) { Text("Cancel") } }
+         )
+     }
 
 }
 @Composable private fun ProfileRow(title:String,subtitle:String,icon:String,onClick:()->Unit){
@@ -185,9 +231,8 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)){
                 Text(title,color=Ink,fontSize=11.sp,fontWeight=FontWeight.Bold)
-                Text(subtitle,color=Muted,fontSize=9.sp)
+                Text(subtitle,color=Muted,fontSize=9.sp,maxLines=1)
             }
-            Icon(Icons.Filled.ChevronRight,contentDescription="Open $title",tint=Muted,modifier=Modifier.size(19.dp))
         }
 
     }

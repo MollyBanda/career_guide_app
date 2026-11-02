@@ -39,6 +39,9 @@ data class PathwiseUserProfile(
     val cloudSynced: Boolean = true
 )
 
+data class PathwiseAnnouncement(val id: String, val title: String, val message: String)
+data class PathwiseStudentAccount(val fullName: String, val email: String)
+
 class PathwiseRepository private constructor(private val context: Context) {
     private val database = PathwiseDatabase.get(context)
     private val firebaseAuth = FirebaseAuth.getInstance()
@@ -47,8 +50,64 @@ class PathwiseRepository private constructor(private val context: Context) {
 
     fun observeCatalog(): Flow<List<OpportunityEntity>> = database.opportunities().observeAll()
 
-    fun observeSavedTitles(uid: String?, onError: (Exception) -> Unit = {}): Flow<Set<String>> = if (uid.isNullOrBlank()) {
-        kotlinx.coroutines.flow.flowOf(emptySet())
+    fun observeStudentAccounts(onError: (Exception) -> Unit = {}): Flow<List<PathwiseStudentAccount>> = callbackFlow {
+        val registration = firestore.collection("users").whereEqualTo("role", "Student")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    onError(error)
+                    trySend(emptyList())
+                } else {
+                    trySend(snapshot?.documents.orEmpty().mapNotNull { document ->
+                        document.getString("email")?.let { email ->
+                            val name = document.getString("fullName")?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
+                            PathwiseStudentAccount(name, email)
+                        }
+                    })
+                }
+            }
+        awaitClose { registration.remove() }
+    }.combine(database.userProfiles().observeProfilesByRole("Student")) { cloudAccounts, localProfiles ->
+        (localProfiles.map { PathwiseStudentAccount(it.fullName, it.email) } + cloudAccounts)
+            .associateBy { it.email.lowercase() }
+            .values
+            .sortedBy { it.fullName.lowercase() }
+    }
+
+    fun observeStudentAccountCount(onError: (Exception) -> Unit = {}): Flow<Int> =
+        observeStudentAccounts(onError).map { it.size }
+
+    fun observeLatestAnnouncement(onError: (Exception) -> Unit = {}): Flow<PathwiseAnnouncement?> = callbackFlow {
+        val registration = firestore.collection("announcements")
+            .orderBy("createdAt", Query.Direction.DESCENDING).limit(1)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    onError(error)
+                    trySend(null)
+                } else {
+                    val item = snapshot?.documents?.firstOrNull()
+                    trySend(item?.let { PathwiseAnnouncement(it.id, it.getString("title").orEmpty(), it.getString("message").orEmpty()) })
+                }
+            }
+        awaitClose { registration.remove() }
+    }
+
+    suspend fun broadcastAnnouncement(uid: String, title: String, message: String) = withContext(Dispatchers.IO) {
+        require(title.isNotBlank() && message.isNotBlank()) { "Enter an announcement title and message." }
+        require(firebaseAuth.currentUser.isTrustedAdmin(uid)) { "Only a verified administrator can broadcast system announcements." }
+        val id = java.util.UUID.randomUUID().toString()
+        awaitFirebase(firestore.collection("announcements").document(id).set(mapOf(
+            "id" to id,
+            "title" to title.trim(),
+            "message" to message.trim(),
+            "createdBy" to uid,
+            "createdAt" to System.currentTimeMillis()
+        )))
+        Unit
+    }
+
+    fun observeSavedTitles(uid: String?, localEmail: String = "", onError: (Exception) -> Unit = {}): Flow<Set<String>> = if (uid.isNullOrBlank()) {
+        if (localEmail.isBlank()) kotlinx.coroutines.flow.flowOf(emptySet())
+        else database.savedItems().observeTitles(localEmail).map { it.toSet() }
     } else {
         callbackFlow {
             val registration = firestore.collection("users").document(uid).collection("savedItems")
@@ -142,9 +201,11 @@ class PathwiseRepository private constructor(private val context: Context) {
         cloudProfile
     }
 
-    suspend fun register(name: String, email: String, password: String, role: String): PathwiseUserProfile? = withContext(Dispatchers.IO) {
+    suspend fun register(name: String, email: String, password: String, role: String, educationLevel: String = "Exploring"): PathwiseUserProfile? = withContext(Dispatchers.IO) {
         val normalizedEmail = email.trim().lowercase()
         require(role in setOf("Student", "Counsellor", "Admin")) { "Choose a valid account type." }
+        val selectedEducationLevel = if (role == "Student") educationLevel else "Exploring"
+        require(selectedEducationLevel in setOf("High School", "College / Uni", "Career Switcher", "Exploring")) { "Choose your current education level." }
         if (database.userProfiles().findByEmail(normalizedEmail) != null) return@withContext null
         try {
             awaitFirebase(firebaseAuth.createUserWithEmailAndPassword(normalizedEmail, password), timeoutSeconds = 12)
@@ -152,7 +213,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             val cause = error.rootCause()
             if (cause is FirebaseAuthUserCollisionException) return@withContext null
             if (cause.canUseLocalFallback()) {
-                return@withContext createLocalAccount(name, normalizedEmail, password, role)
+                return@withContext createLocalAccount(name, normalizedEmail, password, role, selectedEducationLevel)
             }
             throw cause
         }
@@ -164,6 +225,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             email = normalizedEmail,
             fullName = name.trim(),
             role = role,
+            educationLevel = selectedEducationLevel,
             passwordSalt = Base64.encodeToString(salt, Base64.NO_WRAP),
             passwordHash = Base64.encodeToString(hash, Base64.NO_WRAP),
             updatedAt = now
@@ -174,6 +236,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             "fullName" to name.trim(),
             "email" to normalizedEmail,
             "role" to role,
+            "educationLevel" to selectedEducationLevel,
             "createdAt" to now,
             "updatedAt" to now
         )
@@ -199,12 +262,14 @@ class PathwiseRepository private constructor(private val context: Context) {
     }
 
     /** Keeps signup usable when Firebase Auth cannot complete; never reports this profile as cloud-synced. */
-    suspend fun registerLocally(name: String, email: String, password: String, role: String): PathwiseUserProfile? = withContext(Dispatchers.IO) {
+    suspend fun registerLocally(name: String, email: String, password: String, role: String, educationLevel: String = "Exploring"): PathwiseUserProfile? = withContext(Dispatchers.IO) {
         val normalizedEmail = email.trim().lowercase()
         require(role in setOf("Student", "Counsellor", "Admin")) { "Choose a valid account type." }
+        val selectedEducationLevel = if (role == "Student") educationLevel else "Exploring"
+        require(selectedEducationLevel in setOf("High School", "College / Uni", "Career Switcher", "Exploring")) { "Choose your current education level." }
         val existing = database.userProfiles().findByEmail(normalizedEmail)
         if (existing != null && !passwordMatches(existing, password)) return@withContext null
-        val profile = existing ?: return@withContext createLocalAccount(name, normalizedEmail, password, role)
+        val profile = existing ?: return@withContext createLocalAccount(name, normalizedEmail, password, role, selectedEducationLevel)
         setActiveEmail(normalizedEmail)
         val currentUser = firebaseAuth.currentUser
         val uid = currentUser?.uid?.takeIf { currentUser.email.equals(normalizedEmail, ignoreCase = true) }
@@ -212,7 +277,7 @@ class PathwiseRepository private constructor(private val context: Context) {
         PathwiseUserProfile(uid, profile.fullName, profile.email, profile.role, cloudSynced = false)
     }
 
-    suspend fun authenticate(email: String, password: String, selectedRole: String): PathwiseUserProfile? = withContext(Dispatchers.IO) {
+    suspend fun authenticate(email: String, password: String, selectedRole: String = ""): PathwiseUserProfile? = withContext(Dispatchers.IO) {
         val normalizedEmail = email.trim().lowercase()
         val localProfile = database.userProfiles().findByEmail(normalizedEmail)
         if (firebaseAuth.currentUser?.email?.equals(normalizedEmail, ignoreCase = true) != true) {
@@ -229,7 +294,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             // A locally-created account remains usable when Firebase is misconfigured, offline,
             // or does not yet know about it. The salted local password hash still has to match.
             if (localProfile != null && passwordMatches(localProfile, password)) {
-                if (!localProfile.role.equals(selectedRole, ignoreCase = true)) return@withContext null
+                if (selectedRole.isNotBlank() && !localProfile.role.equals(selectedRole, ignoreCase = true)) return@withContext null
                 firebaseAuth.signOut()
                 setActiveEmail(normalizedEmail)
                 return@withContext PathwiseUserProfile(
@@ -248,7 +313,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             val local = localProfile
             val failure = authenticationFailure
             if (local != null && passwordMatches(local, password) && failure?.canUseLocalFallback() == true) {
-                if (!local.role.equals(selectedRole, ignoreCase = true)) return@withContext null
+                if (selectedRole.isNotBlank() && !local.role.equals(selectedRole, ignoreCase = true)) return@withContext null
                 setActiveEmail(normalizedEmail)
                 return@withContext PathwiseUserProfile(localUid(normalizedEmail), local.fullName, normalizedEmail, local.role, cloudSynced = false)
             }
@@ -261,7 +326,7 @@ class PathwiseRepository private constructor(private val context: Context) {
         } catch (error: Throwable) {
             val cause = error.rootCause()
             if (localProfile != null && cause.canUseCachedProfile()) {
-                if (!localProfile.role.equals(selectedRole, ignoreCase = true)) {
+                if (selectedRole.isNotBlank() && !localProfile.role.equals(selectedRole, ignoreCase = true)) {
                     firebaseAuth.signOut()
                     return@withContext null
                 }
@@ -284,7 +349,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             } catch (error: Throwable) {
                 val cause = error.rootCause()
                 if (cause.canUseCachedProfile()) {
-                    if (!localProfile.role.equals(selectedRole, ignoreCase = true)) {
+                    if (selectedRole.isNotBlank() && !localProfile.role.equals(selectedRole, ignoreCase = true)) {
                         firebaseAuth.signOut()
                         return@withContext null
                     }
@@ -300,7 +365,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             error("Your account profile is missing from Cloud Firestore.")
         }
         val profile = cloudProfile.toPathwiseProfile(uid)
-        if (!profile.role.equals(selectedRole, ignoreCase = true)) {
+        if (selectedRole.isNotBlank() && !profile.role.equals(selectedRole, ignoreCase = true)) {
             firebaseAuth.signOut()
             context.pathwisePreferences.edit { it.remove(activeEmailKey) }
             return@withContext null
@@ -331,7 +396,7 @@ class PathwiseRepository private constructor(private val context: Context) {
             }
             is FirebaseAuthException -> when {
                 cause.errorCode.contains("OPERATION_NOT_ALLOWED", ignoreCase = true) ->
-                    "Email/Password sign-in is disabled in Firebase Console. Enable Authentication → Sign-in method → Email/Password."
+                    "Email/Password sign-in is disabled in Firebase Console. Enable Email/Password under Authentication sign-in methods."
                 cause.errorCode.contains("EMAIL_ALREADY_IN_USE", ignoreCase = true) -> "Email already registered. Try logging in."
                 cause.errorCode.contains("WEAK_PASSWORD", ignoreCase = true) -> "Choose a password with at least 6 characters."
                 cause.errorCode.contains("INVALID_EMAIL", ignoreCase = true) -> "Enter a valid email address."
@@ -367,14 +432,30 @@ class PathwiseRepository private constructor(private val context: Context) {
         PathwiseUserProfile(uid, name.trim(), email, role)
     }
 
+    suspend fun updateLocalProfile(email: String, name: String) = withContext(Dispatchers.IO) {
+        val normalizedEmail = email.trim().lowercase()
+        val profile = database.userProfiles().findByEmail(normalizedEmail)
+            ?: error("The local account profile could not be found on this device.")
+        database.userProfiles().updateProfile(normalizedEmail, normalizedEmail, name.trim(), System.currentTimeMillis())
+        PathwiseUserProfile(localUid(normalizedEmail), name.trim(), normalizedEmail, profile.role, cloudSynced = false)
+    }
+
     suspend fun signOut() {
         context.pathwisePreferences.edit { it.remove(activeEmailKey) }
         firebaseAuth.signOut()
     }
 
-    suspend fun toggleSaved(uid: String, title: String) = withContext(Dispatchers.IO) {
-        require(firebaseAuth.currentUser?.uid == uid) { "Sign in to manage your own saved items." }
+    suspend fun toggleSaved(uid: String?, title: String, localEmail: String = "") = withContext(Dispatchers.IO) {
         val item = database.opportunities().findByTitle(title) ?: return@withContext
+        if (uid.isNullOrBlank()) {
+            require(localEmail.isNotBlank() && database.userProfiles().findByEmail(localEmail) != null) {
+                "Log in to save opportunities."
+            }
+            if (database.savedItems().contains(localEmail, item.id)) database.savedItems().delete(localEmail, item.id)
+            else database.savedItems().insert(SavedItemEntity(localEmail, item.id))
+            return@withContext
+        }
+        require(firebaseAuth.currentUser?.uid == uid) { "Sign in to manage your own saved items." }
         val savedRef = firestore.collection("users").document(uid).collection("savedItems").document(item.id)
         val current = awaitFirebase(savedRef.get())
         if (current.exists()) awaitFirebase(savedRef.delete())
@@ -436,13 +517,15 @@ class PathwiseRepository private constructor(private val context: Context) {
         name: String,
         email: String,
         password: String,
-        role: String
+        role: String,
+        educationLevel: String = "Exploring"
     ): PathwiseUserProfile {
         val salt = ByteArray(16).also(SecureRandom()::nextBytes)
         val localProfile = UserProfileEntity(
             email = email,
             fullName = name.trim(),
             role = role,
+            educationLevel = educationLevel,
             passwordSalt = Base64.encodeToString(salt, Base64.NO_WRAP),
             passwordHash = Base64.encodeToString(passwordHash(password, salt), Base64.NO_WRAP)
         )

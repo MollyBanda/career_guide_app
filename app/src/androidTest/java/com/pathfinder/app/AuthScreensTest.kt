@@ -21,7 +21,7 @@ class AuthScreensTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun registrationScreen(notify: (String) -> Unit = {}, onAuthenticated: (String, String, String, String) -> Unit = { _, _, _, _ -> }) {
+    private fun registrationScreen(notify: (String) -> Unit = {}, onAuthenticated: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> }) {
         composeRule.setContent {
             PathwiseTheme {
                 SignUpScreen(back = {}, signIn = {}, notify = notify, onAuthenticated = onAuthenticated)
@@ -40,14 +40,14 @@ class AuthScreensTest {
     @Test
     fun CG_REG_001_validRegistration_forwardsAccountDetails() {
         var submitted: List<String>? = null
-        registrationScreen(onAuthenticated = { name, email, password, role -> submitted = listOf(name, email, password, role) })
+        registrationScreen(onAuthenticated = { name, email, password, role, education -> submitted = listOf(name, email, password, role, education) })
         val email = "student-${System.currentTimeMillis()}@example.com"
         fillRegistration("Test Student", email, "Career123", "Career123")
         composeRule.onNodeWithText("Admin").performScrollTo().performClick()
         composeRule.onNodeWithText("I agree to the Terms of Service & Privacy Policy.").performScrollTo().performClick()
         composeRule.onNodeWithText("Create Account", substring = false).performScrollTo().performClick()
         composeRule.runOnIdle {
-            assertEquals(listOf("Test Student", email, "Career123", "Admin"), submitted)
+            assertEquals(listOf("Test Student", email, "Career123", "Admin", "Exploring"), submitted)
         }
     }
 
@@ -94,7 +94,7 @@ class AuthScreensTest {
         composeRule.setContent {
             PathwiseTheme { SignInScreen(back = {}, create = {}, notify = { message = it }, onLogin = { _, _, _ -> }) }
         }
-        composeRule.onNodeWithText("Welcome back! 👋").assertExists()
+        composeRule.onNodeWithText("Welcome back!").assertExists()
         composeRule.onNodeWithText("Login").performClick()
         composeRule.runOnIdle { assertEquals("Enter a valid email address and password.", message) }
     }
@@ -118,12 +118,14 @@ class AuthScreensTest {
         var message = ""
         registrationScreen(
             notify = { message = it },
-            onAuthenticated = { _, email, _, _ ->
+            onAuthenticated = { _, email, _, _, _ ->
                 attemptedEmail = email
                 message = "Email already registered."
             }
         )
         fillRegistration("Test Student", "existing@example.com", "Career123", "Career123")
+        composeRule.onNodeWithText("Student").performScrollTo().performClick()
+        composeRule.onNodeWithText("High School").performScrollTo().performClick()
         composeRule.onNodeWithText("I agree to the Terms of Service & Privacy Policy.").performScrollTo().performClick()
         composeRule.onNodeWithText("Create Account").performScrollTo().performClick()
         composeRule.runOnIdle {
@@ -144,7 +146,7 @@ class AuthScreensTest {
         fields[0].performTextInput("missing@example.com")
         fields[1].performTextInput("wrong-password")
         composeRule.onNodeWithText("Login").performClick()
-        composeRule.onNodeWithText("Welcome back! 👋").assertExists()
+        composeRule.onNodeWithText("Welcome back!").assertExists()
         composeRule.runOnIdle { assertTrue("Credentials should be submitted for repository authentication", attemptedLogin) }
     }
 

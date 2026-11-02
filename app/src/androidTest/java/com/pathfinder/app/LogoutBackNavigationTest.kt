@@ -28,12 +28,12 @@ class LogoutBackNavigationTest {
         if (hasText("Log out")) {
             composeRule.onNodeWithText("Log out").performScrollTo().performClick()
         }
-        if (hasText("Welcome back! 👋")) {
+        if (hasText("Welcome back!")) {
             composeRule.onNodeWithText("Back").performClick()
         }
         if (hasText("Find the path that feels like you.")) {
             composeRule.onNodeWithText("Create my account").performClick()
-        } else if (hasText("Welcome back! 👋")) {
+        } else if (hasText("Welcome back!")) {
             composeRule.onNodeWithText("Create Account").performClick()
         }
 
@@ -56,7 +56,7 @@ class LogoutBackNavigationTest {
         assertTrue("Account setup should reach the authenticated Home screen", hasText("Where do you want to go?"))
         composeRule.onNodeWithContentDescription("Profile").performClick()
         composeRule.onNodeWithText("Log out").performScrollTo().performClick()
-        composeRule.onNodeWithText("Welcome back! 👋").assertExists()
+        composeRule.onNodeWithText("Welcome back!").assertExists()
 
         var activityFinishing = false
         composeRule.activityRule.scenario.onActivity { activity ->

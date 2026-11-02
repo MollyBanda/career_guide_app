@@ -113,16 +113,14 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
      Surface(Modifier.fillMaxWidth().padding(top=7.dp).clickable(onClick=onClick),shape=RoundedCornerShape(12.dp),
         color=Color.White,border=BorderStroke(1.dp,Line)){
 
-          Row(Modifier.padding(horizontal=10.dp,vertical=9.dp),verticalAlignment=Alignment.CenterVertically){
-            FeatureIcon(icon)
-            Spacer(Modifier.width(9.dp))
-            Column(Modifier.weight(1f)){
-                Text(title,color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold)
-                Text(subtitle,color=Muted,fontSize=10.sp)
+          Column(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=9.dp)){
+            Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically){
+                FeatureIcon(icon)
+                Spacer(Modifier.width(9.dp))
+                Text(title,color=Ink,fontSize=12.sp,fontWeight=FontWeight.Bold, modifier=Modifier.weight(1f))
+                Label(match,Color(0xFFD8F7F1),Color(0xFF007C78))
             }
-            Label(match,Color(0xFFD8F7F1),Color(0xFF007C78))
-            Spacer(Modifier.width(3.dp))
-            Icon(Icons.Filled.ChevronRight,contentDescription="View $title",tint=Muted,modifier=Modifier.size(19.dp))
+            Text(subtitle,color=Muted,fontSize=10.sp, modifier=Modifier.padding(start=39.dp, top=4.dp))
         }
 
     }

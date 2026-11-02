@@ -14,13 +14,14 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if ownsUser(uid);
+      allow read: if ownsUser(uid) || trustedAdmin();
       allow create: if ownsUser(uid)
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.fullName is string
         && request.resource.data.role in ['Student', 'Counsellor', 'Admin']
-        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'createdAt', 'updatedAt']);
+        && request.resource.data.educationLevel is string
+        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'educationLevel', 'createdAt', 'updatedAt']);
       allow update: if ownsUser(uid)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
@@ -85,6 +86,18 @@ service cloud.firestore {
     match /internships/{recordId} {
       allow read: if signedIn();
       allow write: if trustedAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create: if trustedAdmin()
+        && request.resource.data.id == announcementId
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.message is string
+        && request.resource.data.createdAt is int
+        && request.resource.data.keys().hasOnly(['id', 'createdBy', 'title', 'message', 'createdAt']);
+      allow update, delete: if false;
     }
   }
 }

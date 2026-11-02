@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pathfinder.app.data.model.*
+import com.pathfinder.app.data.repository.PathwiseStudentAccount
 import com.pathfinder.app.ui.components.*
 
 
@@ -47,6 +48,9 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
     },
     onQuizCompleted:(String,List<String>)->Unit={
     _,_->
+},
+    studentAccounts:List<PathwiseStudentAccount> = emptyList(),
+    onBroadcastAnnouncement:(String,String)->Unit={_,_->
 }){
 
      val saved=page=="Saved"
@@ -75,7 +79,9 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 title,sub->onOpenDetails(title,sub,"Profile","Profile")
             },{
                 onNavigate("Profile")
-            },onProfileUpdated,latestAssessment)
+            },onProfileUpdated,latestAssessment,savedTitles,{
+                onNavigate("Saved")
+            })
                  "Quiz"->AssessmentScreen(pad,{
                 onNavigate("Home")
             },notify,{
@@ -101,7 +107,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
 
                       "Admin"->AdminDashboardScreen(pad,notify,{
                     onNavigate("Profile")
-                },catalogItems,onSaveOpportunity,onDeleteOpportunity)
+                },catalogItems,onSaveOpportunity,onDeleteOpportunity,studentAccounts,onBroadcastAnnouncement)
                       "Counsellor"->CounsellorDashboardScreen(pad,notify,{
                     onNavigate("Profile")
                 })

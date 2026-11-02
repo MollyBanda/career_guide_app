@@ -73,29 +73,14 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
 
           Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)){
-            Text("PATHFINDER",color=Blue,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=.7.sp)
-            Text(page,color=Ink,fontSize=15.sp,fontWeight=FontWeight.Bold)
+            Text("PATHFINDER",color=Blue,fontSize=12.sp,fontWeight=FontWeight.Bold,letterSpacing=.7.sp)
+            Text(page,color=Ink,fontSize=17.sp,fontWeight=FontWeight.Bold)
         }
 
-           Icon(Icons.Filled.Notifications,contentDescription="Notifications",tint=Muted,modifier=Modifier.size(22.dp))
-        Spacer(Modifier.width(9.dp))
+           Spacer(Modifier.width(9.dp))
            Surface(Modifier.clickable(onClick=onProfile),color=Color(0xFFDBF5EE),shape=CircleShape){
-            Text("M",Modifier.padding(horizontal=9.dp,vertical=6.dp),color=Color(0xFF007C78),fontSize=12.sp,
+            Text("M",Modifier.padding(horizontal=9.dp,vertical=6.dp),color=Color(0xFF007C78),fontSize=14.sp,
                 fontWeight=FontWeight.Bold)
-        }
-
-    }
-
-}
-@Composable fun PinnedBadge(){
-
-     Surface(color=Color(0xFFD8F7F1),shape=RoundedCornerShape(8.dp)){
-
-          Row(Modifier.padding(horizontal=8.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically){
-
-               Icon(Icons.Filled.BookmarkBorder,contentDescription="Pinned",tint=Color(0xFF007C78),modifier=Modifier.size(15.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("2 pinned",color=Color(0xFF007C78),fontSize=10.sp,fontWeight=FontWeight.Bold)
         }
 
     }

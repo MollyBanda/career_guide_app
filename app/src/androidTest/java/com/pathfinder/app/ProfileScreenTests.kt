@@ -5,6 +5,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -28,7 +29,7 @@ class ProfileScreenTests {
                 ProfileScreen(PaddingValues(), {}, {}, "Test Learner", "learner@example.com", { _, _ -> }, {}, { _, _ -> }, null)
             }
         }
-        composeRule.onNodeWithText("Test Learner  ✓").assertExists()
+        composeRule.onNodeWithText("Test Learner").assertExists()
         composeRule.onNodeWithText("learner@example.com").assertExists()
     }
 
@@ -69,6 +70,24 @@ class ProfileScreenTests {
             assertEquals("Please fill all fields.", message)
             assertTrue("Invalid profile should not be saved", !updateCalled)
         }
+    }
+
+    @Test
+    fun profileCanAddEducationAndCareerPreferences() {
+        composeRule.setContent {
+            PathwiseTheme {
+                ProfileScreen(PaddingValues(), {}, {}, "Test Learner", "learner@example.com", { _, _ -> }, {}, { _, _ -> }, null)
+            }
+        }
+        composeRule.onNodeWithText("Education & skills").performScrollTo().performClick()
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextInput("BSc Computing; Kotlin")
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.onNodeWithText("BSc Computing; Kotlin").assertExists()
+
+        composeRule.onNodeWithText("Career preferences").performScrollTo().performClick()
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextInput("UX Designer; Lilongwe")
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.onNodeWithText("UX Designer; Lilongwe").assertExists()
     }
 
     @Test

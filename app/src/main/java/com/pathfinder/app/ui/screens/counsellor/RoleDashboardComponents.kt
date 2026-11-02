@@ -31,9 +31,9 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
     },shape=RoundedCornerShape(10.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
 
           Column(Modifier.padding(horizontal=7.dp,vertical=8.dp)){
-            Text(label,color=Muted,fontSize=9.sp,maxLines=1)
-            Text(value,color=Ink,fontSize=15.sp,fontWeight=FontWeight.ExtraBold)
-            Text(detail,color=Color(0xFF008C82),fontSize=9.sp,fontWeight=FontWeight.SemiBold)
+            Text(label,color=Ink,fontSize=13.sp,maxLines=2)
+            Text(value,color=Ink,fontSize=20.sp,fontWeight=FontWeight.ExtraBold)
+            Text(detail,color=Color(0xFF00685F),fontSize=12.sp,fontWeight=FontWeight.SemiBold)
         }
 
     }
@@ -42,28 +42,26 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
 @Composable fun SectionTitle(title:String,trailing:String){
 
      Row(Modifier.fillMaxWidth().padding(bottom=6.dp),verticalAlignment=Alignment.CenterVertically){
-        Text(title,color=Ink,fontSize=11.sp,fontWeight=FontWeight.ExtraBold)
+        Text(title,color=Ink,fontSize=14.sp,fontWeight=FontWeight.ExtraBold)
         Spacer(Modifier.weight(1f))
-        Text(trailing,color=Muted,fontSize=9.sp)
+        Text(trailing,color=Ink,fontSize=12.sp)
     }
 
 }
-@Composable fun ActionCard(title:String,description:String,meta:String,action:String,notify:(String)->Unit){
+@Composable fun ActionCard(title:String,description:String,meta:String,action:String,onAction:()->Unit){
 
      Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(11.dp),color=Color.White,
         border=BorderStroke(1.dp,Line)){
 
           Row(Modifier.padding(horizontal=9.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
             Column(Modifier.weight(1f)){
-                Text(title,color=Ink,fontSize=11.sp,fontWeight=FontWeight.Bold)
-                Text(description,color=Muted,fontSize=10.sp)
-                Text(meta,color=Muted,fontSize=9.sp)
+                Text(title,color=Ink,fontSize=14.sp,fontWeight=FontWeight.Bold)
+                Text(description,color=Ink,fontSize=12.sp)
+                Text(meta,color=Muted,fontSize=12.sp)
             }
-            Button(onClick={
-                notify("$action selected for $title.")
-            },contentPadding=PaddingValues(horizontal=11.dp,vertical=5.dp),shape=RoundedCornerShape(8.dp),
+            Button(onClick=onAction,contentPadding=PaddingValues(horizontal=11.dp,vertical=5.dp),shape=RoundedCornerShape(8.dp),
                 colors=ButtonDefaults.buttonColors(containerColor=Blue)){
-                Text(action,fontSize=10.sp,fontWeight=FontWeight.Bold)
+                Text(action,fontSize=12.sp,fontWeight=FontWeight.Bold)
             }
         }
 
@@ -83,60 +81,55 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
     }
 
 }
-@Composable fun ScheduleRow(time:String,name:String,appointment:String,notify:(String)->Unit){
+@Composable fun ScheduleRow(time:String,name:String,appointment:String,onClick:()->Unit){
 
-     Row(Modifier.fillMaxWidth().clickable{
-        notify("$appointment for $name opened.")
-    }.padding(vertical=7.dp),verticalAlignment=Alignment.CenterVertically){
+     Row(Modifier.fillMaxWidth().clickable(onClick=onClick).padding(vertical=7.dp),verticalAlignment=Alignment.CenterVertically){
         Text(time,color=Blue,fontSize=10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.width(68.dp))
         Column(Modifier.weight(1f)){
             Text(name,color=Ink,fontSize=10.sp,fontWeight=FontWeight.Bold)
             Text(appointment,color=Muted,fontSize=9.sp)
         }
-        Icon(Icons.Filled.ChevronRight,contentDescription=null,tint=Muted,modifier=Modifier.size(17.dp))
     }
 
 }
-@Composable fun RegistryCard(title:String,subtitle:String,icon:String,modifier:Modifier,notify:(String)->Unit){
+@Composable fun RegistryCard(title:String,subtitle:String,icon:String,modifier:Modifier,onClick:()->Unit){
 
-     Surface(modifier.fillMaxWidth().padding(bottom=6.dp).clickable{
-        notify("$title registry opened.")
-    },shape=RoundedCornerShape(10.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+     Surface(modifier.fillMaxWidth().padding(bottom=6.dp).clickable(onClick=onClick),shape=RoundedCornerShape(10.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
 
           Row(Modifier.padding(8.dp),verticalAlignment=Alignment.CenterVertically){
             FeatureIcon(icon)
             Spacer(Modifier.width(7.dp))
-            Column{
-                Text(title,color=Ink,fontSize=10.sp,fontWeight=FontWeight.Bold)
-                Text(subtitle,color=Muted,fontSize=8.sp)
+            Column(Modifier.weight(1f)){
+                Text(title,color=Ink,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=2)
+                Text(subtitle,color=Ink,fontSize=12.sp,maxLines=2)
             }
         }
 
     }
 
 }
-@Composable fun ReviewCard(title:String,description:String,tag:String,notify:(String)->Unit){
+@Composable fun ReviewCard(title:String,description:String,tag:String,onReview:()->Unit,onApprove:()->Unit){
 
      Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(10.dp),color=Color.White,
         border=BorderStroke(1.dp,Line)){
 
-          Row(Modifier.padding(8.dp),verticalAlignment=Alignment.CenterVertically){
-            FeatureIcon("degree")
-            Spacer(Modifier.width(7.dp))
-            Column(Modifier.weight(1f)){
-                Text(title,color=Ink,fontSize=10.sp,fontWeight=FontWeight.Bold,maxLines=1)
-                Text(description,color=Muted,fontSize=8.sp,maxLines=1)
-                Label(tag,Color(0xFFE8EDFF),Blue)
+          Column(Modifier.fillMaxWidth().padding(9.dp)){
+            Row(verticalAlignment=Alignment.Top){
+                FeatureIcon("degree")
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)){
+                    Text(title,color=Ink,fontSize=14.sp,fontWeight=FontWeight.Bold,maxLines=2)
+                    Text(description,color=Ink,fontSize=12.sp,lineHeight=17.sp)
+                    Label(tag,Color(0xFFE8EDFF),Blue)
+                }
             }
-            TextButton(onClick={
-                notify("Review opened for $title.")
-            },contentPadding=PaddingValues(horizontal=5.dp)){
-                Text("Review",fontSize=9.sp)
-            }
-            Button(onClick={
-                notify("$title approved.")
-            },contentPadding=PaddingValues(horizontal=7.dp,vertical=4.dp),shape=RoundedCornerShape(7.dp)){
-                Text("Approve",fontSize=9.sp,fontWeight=FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically){
+                TextButton(onClick=onReview,contentPadding=PaddingValues(horizontal=8.dp)){
+                    Text("View",fontSize=13.sp)
+                }
+                Button(onClick=onApprove,contentPadding=PaddingValues(horizontal=10.dp,vertical=4.dp),shape=RoundedCornerShape(7.dp)){
+                    Text("Approve",fontSize=13.sp,fontWeight=FontWeight.Bold)
+                }
             }
         }
 

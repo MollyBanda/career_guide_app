@@ -46,7 +46,6 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                 Text("Keep your possibilities", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                 Text("in one place.", color = Ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             }
-            PinnedBadge()
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {

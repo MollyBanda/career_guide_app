@@ -33,8 +33,8 @@ fun PathwiseApp(notify: (String) -> Unit) {
     var profileName by remember { mutableStateOf("Maya Martinez") }
     var profileEmail by remember { mutableStateOf("maya.m@example.com") }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
-    val savedItemsFlow = remember(activeUid) {
-        repository.observeSavedTitles(activeUid) {
+    val savedItemsFlow = remember(activeUid, profileEmail) {
+        repository.observeSavedTitles(activeUid, profileEmail) {
             mainHandler.post { notify("Could not load your saved items. Check your connection and account permissions.") }
         }
     }
@@ -46,6 +46,22 @@ fun PathwiseApp(notify: (String) -> Unit) {
         }
     }
     val latestAssessment by assessmentFlow.collectAsState(initial = null)
+    val studentAccountsFlow = remember(activeRole) {
+        if (activeRole == "Admin") repository.observeStudentAccounts {
+            mainHandler.post { notify("Could not read cloud student accounts. Showing accounts saved on this device.") }
+        } else kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+    val studentAccounts by studentAccountsFlow.collectAsState(initial = emptyList())
+    val latestAnnouncement by remember { repository.observeLatestAnnouncement() }.collectAsState(initial = null)
+    var lastAnnouncementId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(latestAnnouncement?.id) {
+        val announcement = latestAnnouncement ?: return@LaunchedEffect
+        val previousId = lastAnnouncementId
+        lastAnnouncementId = announcement.id
+        if (previousId != null && previousId != announcement.id) {
+            notify("${announcement.title}: ${announcement.message}")
+        }
+    }
     var detailTitle by remember { mutableStateOf("") }
     var detailSubtitle by remember { mutableStateOf("") }
     var detailCategory by remember { mutableStateOf("Careers") }
@@ -122,11 +138,11 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     back = { screen = AppScreen.Welcome },
                     signIn = { screen = AppScreen.SignIn },
                     notify = notify,
-                    onAuthenticated = { name, email, password, role ->
+                    onAuthenticated = { name, email, password, role, educationLevel ->
                         scope.launch {
                             isWorking = true
                             try {
-                                val account = repository.register(name, email, password, role)
+                                val account = repository.register(name, email, password, role, educationLevel)
                                 if (account == null) {
                                     notify("Email already registered.")
                                 } else {
@@ -139,7 +155,7 @@ fun PathwiseApp(notify: (String) -> Unit) {
                                 }
                             } catch (error: Exception) {
                                 val localAccount = runCatching {
-                                    repository.registerLocally(name, email, password, role)
+                                    repository.registerLocally(name, email, password, role, educationLevel)
                                 }.getOrNull()
                                 if (localAccount != null) {
                                     activeUid = null
@@ -201,6 +217,22 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     detailSubtitle = detailSubtitle,
                     detailCategory = detailCategory,
                     detailReturn = detailReturn,
+                    studentAccounts = studentAccounts,
+                    onBroadcastAnnouncement = { title, message ->
+                        val uid = activeUid
+                        if (uid == null) notify("Sign in with a verified administrator account to broadcast announcements.")
+                        else scope.launch {
+                            isWorking = true
+                            try {
+                                repository.broadcastAnnouncement(uid, title, message)
+                                notify("Announcement sent to users currently connected to the app.")
+                            } catch (error: Exception) {
+                                notify(repository.explainAccountError(error))
+                            } finally {
+                                isWorking = false
+                            }
+                        }
+                    },
                     onOpenDetails = { title, subtitle, category, returnTo ->
                         detailTitle = title
                         detailSubtitle = subtitle
@@ -210,11 +242,10 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     },
                     onToggleSave = { title ->
                         val uid = activeUid
-                        if (uid == null) notify("Log in to save opportunities.")
-                        else scope.launch {
+                        scope.launch {
                             isWorking = true
                             try {
-                                repository.toggleSaved(uid, title)
+                                repository.toggleSaved(uid, title, profileEmail)
                                 notify("Saved items updated.")
                             } catch (error: Exception) {
                                 notify(repository.explainAccountError(error))
@@ -225,14 +256,14 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     },
                     onProfileUpdated = { name, email ->
                         val uid = activeUid
-                        if (uid == null) notify("Log in to update your profile.")
-                        else scope.launch {
+                        scope.launch {
                             isWorking = true
                             try {
-                                val updated = repository.updateProfile(uid, name, email)
+                                val updated = if (uid == null) repository.updateLocalProfile(profileEmail, name)
+                                    else repository.updateProfile(uid, name, email)
                                 profileName = updated.fullName
                                 profileEmail = updated.email
-                                notify("Profile updated in Firestore.")
+                                notify(if (updated.cloudSynced) "Profile updated in Firebase." else "Profile updated on this device.")
                             } catch (error: Exception) {
                                 notify(repository.explainAccountError(error))
                             } finally {

@@ -10,6 +10,12 @@ interface UserProfileDao {
     @Query("SELECT * FROM user_profiles WHERE email = :email LIMIT 1")
     suspend fun findByEmail(email: String): UserProfileEntity?
 
+    @Query("SELECT email FROM user_profiles WHERE role = :role")
+    fun observeEmailsByRole(role: String): Flow<List<String>>
+
+    @Query("SELECT * FROM user_profiles WHERE role = :role ORDER BY fullName COLLATE NOCASE")
+    fun observeProfilesByRole(role: String): Flow<List<UserProfileEntity>>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(profile: UserProfileEntity)
 

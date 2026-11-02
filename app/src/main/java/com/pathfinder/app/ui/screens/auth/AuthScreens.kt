@@ -35,37 +35,48 @@ private fun Header(back: () -> Unit, title: String) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(17.dp))
             Spacer(Modifier.width(5.dp)); Text("Back", color = Muted, fontSize = 14.sp)
         }
-        Text(title, color = Muted, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .45.sp)
+        if (title.isNotBlank()) {
+            Text(title, color = Muted, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .45.sp)
+        }
     }
 }
 @Composable
-fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit, onAuthenticated: (String, String, String, String) -> Unit) {
+fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit, onAuthenticated: (String, String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var level by remember { mutableStateOf("College / Uni") }
-    var accountRole by remember { mutableStateOf("Student") }
+    var level by remember { mutableStateOf("") }
+    var accountRole by remember { mutableStateOf("") }
     var terms by remember { mutableStateOf(false) }
     var alerts by remember { mutableStateOf(true) }
+    val passwordIsStrong = password.length >= 8 &&
+        password.any { it.isUpperCase() } && password.any { it.isLowerCase() } &&
+        password.any { it.isDigit() } && password.any { !it.isLetterOrDigit() }
+    val passwordHint = when {
+        password.isBlank() -> null
+        password.length < 6 -> "WEAK PASSWORD"
+        passwordIsStrong -> "STRONG PASSWORD"
+        else -> null
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 23.dp, vertical = 14.dp)) {
-        Header(back, "STEP 1 OF 2 · BASIC INFO")
-        Text("Create your account ✨", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
+        Header(back, "")
+        Text("Create your account", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
         Text("Join 50k+ students and professionals finding their dream career path with clarity and joy.",
             Modifier.padding(top = 5.dp, bottom = 12.dp), color = Muted, fontSize = 13.sp, lineHeight = 19.sp)
-        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF2F3FF), border = BorderStroke(1.dp, Border)) {
-            Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("◎", color = Blue, fontSize = 22.sp); Spacer(Modifier.width(9.dp))
-                Text("Personalized matches & $15M+ in scholarships await", color = Navy, fontSize = 12.sp, lineHeight = 17.sp)
-            }
-        }
-        Spacer(Modifier.height(9.dp))
         FormField("Full Name", name, { name = it }, "e.g. Maya Martinez", Icons.Default.Person)
         FormField("Email Address", email, { email = it }, "e.g. maya.m@example.com", Icons.Default.Email, KeyboardType.Email)
         FormField("Password", password, { password = it }, "At least 6 characters", Icons.Default.Lock,
             KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
+        passwordHint?.let { hint ->
+            Text(
+                "●  $hint", Modifier.align(Alignment.End),
+                color = if (hint == "STRONG PASSWORD") Color(0xFF138E70) else Color(0xFFC85D52),
+                fontSize = 11.sp, fontWeight = FontWeight.Bold
+            )
+        }
         FormField("Confirm Password", confirmPassword, { confirmPassword = it }, "Re-enter your password", Icons.Default.Lock,
             KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
         Text("Account type", Modifier.padding(top = 8.dp, bottom = 6.dp), color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -84,31 +95,25 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
                 }
             }
         }
-        val strength = when {
-            password.isEmpty() -> "ADD A PASSWORD"
-            password.length < 6 -> "WEAK PASSWORD"
-            password.any { it.isDigit() } && password.any { !it.isLetterOrDigit() } -> "STRONG PASSWORD"
-            else -> "GOOD PASSWORD"
-        }
-        Text("●  $strength", Modifier.align(Alignment.End), color = if (strength == "WEAK PASSWORD") Color(0xFFC85D52) else Color(0xFF138E70),
-            fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text("Where are you right now?  Helps tailor paths", Modifier.padding(top = 10.dp, bottom = 6.dp),
-            color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        val levels = listOf("High School", "College / Uni", "Career Switcher", "Exploring")
-        levels.chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                row.forEach { option ->
-                    val selected = level == option
-                    Surface(
-                        modifier = Modifier.weight(1f).height(38.dp).clickable { level = option },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selected) Color(0xFFF0F3FF) else Color.White,
-                        border = BorderStroke(1.dp, if (selected) Blue else Border)
-                    ) {
-                        Row(Modifier.fillMaxSize().padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(option, color = if (selected) Blue else Muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                            if (selected) Icon(Icons.Default.CheckCircle, contentDescription = "Selected", tint = Blue, modifier = Modifier.size(14.dp))
+        if (accountRole == "Student") {
+            Text("Where are you right now?  Helps tailor paths", Modifier.padding(top = 10.dp, bottom = 6.dp),
+                color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            val levels = listOf("High School", "College / Uni", "Career Switcher", "Exploring")
+            levels.chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    row.forEach { option ->
+                        val selected = level == option
+                        Surface(
+                            modifier = Modifier.weight(1f).height(38.dp).clickable { level = option },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selected) Color(0xFFF0F3FF) else Color.White,
+                            border = BorderStroke(1.dp, if (selected) Blue else Border)
+                        ) {
+                            Row(Modifier.fillMaxSize().padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(option, color = if (selected) Blue else Muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                if (selected) Icon(Icons.Default.CheckCircle, contentDescription = "Selected", tint = Blue, modifier = Modifier.size(14.dp))
+                            }
                         }
                     }
                 }
@@ -123,12 +128,15 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
             )
             if (validationError != null) {
                 notify(validationError)
+            } else if (accountRole.isBlank()) {
+                notify("Choose an account type.")
+            } else if (accountRole == "Student" && level.isBlank()) {
+                notify("Choose where you are right now.")
             } else {
-                onAuthenticated(name.trim(), email.trim(), password, accountRole)
+                onAuthenticated(name.trim(), email.trim(), password, accountRole, if (accountRole == "Student") level else "Exploring")
             }
         }
         SwitchLine("Already have an account?", "Log in", signIn)
-        SecureLine()
     }
 }
 
@@ -144,33 +152,12 @@ fun SignInScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(true) }
-    var role by remember { mutableStateOf("Student") }
-
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 23.dp, vertical = 14.dp)) {
-        Header(back, "PATHFINDER ID  ✨")
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            listOf("Student","Counsellor","Admin").forEach { option ->
-                val selected=role==option
-                Surface(Modifier.weight(1f).height(38.dp).clickable { role=option },shape=RoundedCornerShape(10.dp),color=if(selected) Color(0xFFE8EDFF) else Color.White,border=BorderStroke(1.dp,if(selected) Blue else Border)) {
-                    Box(contentAlignment=Alignment.Center){Text(option,color=if(selected) Blue else Muted,fontSize=11.sp,fontWeight=FontWeight.SemiBold)}
-                }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Text("Welcome back! 👋", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
+        Header(back, "PATHFINDER ID")
+        Text("Welcome back!", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Navy)
         Text("Log in to pick up where you left off on your career discovery path.",
             Modifier.padding(top = 5.dp, bottom = 12.dp), color = Muted, fontSize = 13.sp, lineHeight = 19.sp)
-        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF2F3FF), border = BorderStroke(1.dp, Border)) {
-            Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("◉", color = Blue, fontSize = 19.sp); Spacer(Modifier.width(9.dp))
-                Column {
-                    Text("Data Science Explorer", color = Navy, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Last active: 2 days ago · 80% Match", color = Muted, fontSize = 11.sp)
-                }
-                Spacer(Modifier.weight(1f)); Text("♧", color = Muted, fontSize = 17.sp)
-            }
-        }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         FormField("Email address", email, { email = it }, "alex.chen@example.com", Icons.Default.Email, KeyboardType.Email)
         FormField("Password", password, { password = it }, "Enter your password", Icons.Default.Lock,
             KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
@@ -192,11 +179,10 @@ fun SignInScreen(
             when {
                 PathwiseInputValidation.loginError(email, password) != null ->
                     notify(PathwiseInputValidation.loginError(email, password)!!)
-                else -> onLogin(email.trim(), password, role)
+                else -> onLogin(email.trim(), password, "")
             }
         }
         SwitchLine("Don't have an account?", "Create Account", create)
-        SecureLine()
     }
 }
 
@@ -277,13 +263,5 @@ private fun SwitchLine(prefix: String, actionText: String, action: () -> Unit) {
         TextButton(onClick = action, contentPadding = PaddingValues(start = 4.dp, end = 0.dp)) {
             Text(actionText, color = Blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
-    }
-}
-
-@Composable
-private fun SecureLine() {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Lock, contentDescription = null, tint = Muted, modifier = Modifier.size(11.dp))
-        Spacer(Modifier.width(4.dp)); Text("256-bit SSL encrypted & secure", color = Muted, fontSize = 11.sp)
     }
 }

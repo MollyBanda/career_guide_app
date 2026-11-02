@@ -38,7 +38,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Programming, analytical thinking, problem solving, communication, teamwork, and attention to detail.",
 
-          "Junior developer → software developer/engineer → senior engineer or technical lead; related paths include QA testing, systems analysis, and app development.",
+          "Junior developer to software developer/engineer to senior engineer or technical lead; related paths include QA testing, systems analysis, and app development.",
 
            "U.S. Bureau of Labor Statistics, Software Developers, QA Analysts, and Testers; University of Malawi Computer Science admissions (check local requirements).")
      title.contains("data scientist",true) -> CareerProfile(
@@ -50,7 +50,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Statistics, analytical and logical thinking, coding, data cleaning, visualisation, problem solving, and communicating results.",
 
-          "Data analyst → junior data scientist → data scientist → specialist or analytics lead; related roles include business intelligence and research analysis.",
+          "Data analyst to junior data scientist to data scientist to specialist or analytics lead; related roles include business intelligence and research analysis.",
 
            "U.S. Bureau of Labor Statistics, Data Scientists.")
      title.contains("environmental scientist",true) -> CareerProfile(
@@ -61,7 +61,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Scientific research, data analysis, careful fieldwork, report writing, communication, and teamwork.",
 
-          "Field or laboratory assistant → environmental scientist → specialist/consultant or programme lead; possible areas include water, conservation, and impact assessment.",
+          "Field or laboratory assistant to environmental scientist to specialist/consultant or programme lead; possible areas include water, conservation, and impact assessment.",
 
            "U.S. Bureau of Labor Statistics, Environmental Scientists and Specialists.")
      title.contains("cybersecurity",true) || title.contains("information security",true) -> CareerProfile(
@@ -73,7 +73,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Analytical thinking, problem solving, careful documentation, communication, networking and systems knowledge.",
 
-          "IT support or network role → security analyst → senior analyst or security engineer → security architect/lead.",
+          "IT support or network role to security analyst to senior analyst or security engineer to security architect/lead.",
 
            "U.S. Bureau of Labor Statistics, Information Security Analysts.")
      title.contains("ux designer",true) -> CareerProfile(
@@ -84,7 +84,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Empathy, research, visual communication, prototyping, collaboration, and explaining design decisions.",
 
-          "Junior UX/UI designer → product designer or UX researcher → senior/lead designer; related paths include service design and usability research.",
+          "Junior UX/UI designer to product designer or UX researcher to senior/lead designer; related paths include service design and usability research.",
 
            "Suggested preparation; qualification requirements vary by employer and location.")
      title.contains("community health worker",true) -> CareerProfile(
@@ -96,7 +96,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Clear communication, listening, cultural sensitivity, teaching, teamwork, empathy, and practical problem solving.",
 
-          "Community outreach assistant → community health worker → experienced worker, trainer, or programme coordinator (subject to local qualifications and employer requirements).",
+          "Community outreach assistant to community health worker to experienced worker, trainer, or programme coordinator (subject to local qualifications and employer requirements).",
 
            "U.S. Bureau of Labor Statistics, Community Health Workers; World Health Organization, Global Curriculum Guide for Community Health Workers.")
      title.contains("marketing",true) -> CareerProfile(
@@ -108,7 +108,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
           "Research, analytical and critical thinking, communication, creativity, and attention to detail.",
 
-          "Marketing assistant → marketing or market-research analyst → strategist/manager; related paths include communications and brand management.",
+          "Marketing assistant to marketing or market-research analyst to strategist/manager; related paths include communications and brand management.",
 
            "U.S. Bureau of Labor Statistics, Market Research Analysts (for research and analytics duties).")
      else -> null
@@ -117,7 +117,7 @@ private fun careerProfileFor(title:String):CareerProfile? = when {
 
      Column(Modifier.fillMaxWidth().padding(top=12.dp)){
         Text(title,color=Ink,fontSize=13.sp,fontWeight=FontWeight.Bold)
-        Text(body,Modifier.padding(top=4.dp),color=Muted,fontSize=11.sp,lineHeight=16.sp)
+        Text(body.replace('\u2192', ' '),Modifier.padding(top=4.dp),color=Muted,fontSize=11.sp,lineHeight=16.sp)
     }
 
 }
