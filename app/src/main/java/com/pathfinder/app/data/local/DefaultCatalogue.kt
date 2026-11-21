@@ -33,4 +33,7 @@ internal fun defaultOpportunities(): List<OpportunityEntity> = listOf(
     OpportunityEntity("internship-clean-energy", "Clean Energy Intern", "Internships", "Engineering · 12 weeks", "A sample placement description. Confirm active vacancies with the host organisation.", requirements = "Host-specific; review the current advert.", duration = "12 weeks", deadline = "Confirm with host"),
     OpportunityEntity("internship-health", "Community Health Placement", "Internships", "Health sciences · 10 weeks", "A sample placement description. Check local eligibility and current availability.", requirements = "Host-specific; review the current advert.", duration = "10 weeks", deadline = "Confirm with host"),
     OpportunityEntity("internship-data", "Junior Data Intern", "Internships", "Technology · Paid placement", "A sample placement description for entry-level data experience.", requirements = "Host-specific; review the current advert.", deadline = "Confirm with host")
-)
+).filterNot { item ->
+    // Replace shallow starter records with their expanded counterparts in a fresh install.
+    item.id in setOf("uni-malawi", "degree-bsc-cs", "career-cybersecurity", "career-data", "career-data-engineer")
+} + expandedOpportunities()

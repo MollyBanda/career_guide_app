@@ -2,6 +2,7 @@ package com.pathfinder.app.navigation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PathwiseApp(notify: (String) -> Unit) {
+    val darkTheme = isSystemInDarkTheme()
     val context = LocalContext.current
     val repository = remember { PathwiseRepository.get(context) }
     val scope = rememberCoroutineScope()
@@ -40,6 +42,7 @@ fun PathwiseApp(notify: (String) -> Unit) {
     }
     val savedItems by savedItemsFlow.collectAsState(initial = emptySet())
     val catalogItems by repository.observeCatalog().collectAsState(initial = emptyList())
+    val universityProgrammes by repository.observeUniversityProgrammes().collectAsState(initial = emptyList())
     val assessmentFlow = remember(activeUid) {
         repository.observeLatestAssessment(activeUid) {
             mainHandler.post { notify("Could not load your assessment history. Check your connection and account permissions.") }
@@ -86,7 +89,10 @@ fun PathwiseApp(notify: (String) -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = Page) {
         Box(
             Modifier.fillMaxSize().background(
-                Brush.linearGradient(listOf(Color(0xFFE5EAFF), Page, Color(0xFFE3F8F1)))
+                Brush.linearGradient(
+                    if (darkTheme) listOf(Color(0xFF111725), Page, Color(0xFF14211F))
+                    else listOf(Color(0xFFE5EAFF), Page, Color(0xFFE3F8F1))
+                )
             )
         ) {
             when (screen) {
@@ -189,6 +195,7 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     profileEmail = profileEmail,
                     savedTitles = savedItems,
                     catalogItems = catalogItems,
+                    universityProgrammes = universityProgrammes,
                     latestAssessment = latestAssessment,
                     onSaveOpportunity = { item ->
                         val uid = activeUid

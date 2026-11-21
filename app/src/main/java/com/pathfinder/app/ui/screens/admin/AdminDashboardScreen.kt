@@ -82,7 +82,7 @@ fun AdminDashboardScreen(
         val vitals = listOf(
             "Student accounts" to studentAccounts.size.toString(),
             "Careers available" to catalogItems.count { it.category == "Careers" }.toString(),
-            "Universities available" to catalogItems.count { it.category == "Universities" }.toString()
+            "Universities available" to catalogItems.count { it.category == "Universities" && (it.id == "uni-malawi" || it.id.startsWith("uni-expanded-")) }.toString()
         )
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             if (maxWidth >= 560.dp) {
@@ -162,7 +162,7 @@ fun AdminDashboardScreen(
         val entries = when (vital) {
             "Student accounts" -> studentAccounts.map { it.fullName to it.email }
             "Careers available" -> catalogItems.filter { it.category == "Careers" }.map { it.title to it.subtitle }
-            else -> catalogItems.filter { it.category == "Universities" }.map { it.title to it.subtitle }
+            else -> catalogItems.filter { it.category == "Universities" && (it.id == "uni-malawi" || it.id.startsWith("uni-expanded-")) }.map { it.title to it.subtitle }
         }
         AlertDialog(
             onDismissRequest = { selectedVital = null },
@@ -175,7 +175,7 @@ fun AdminDashboardScreen(
                         entries.forEach { (title, subtitle) ->
                             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Text(title, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                                Text(subtitle, color = Color(0xFF465264), fontSize = 14.sp, lineHeight = 19.sp)
+                                Text(subtitle, color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
                             }
                             HorizontalDivider(color = Line)
                         }
@@ -252,11 +252,11 @@ private fun registryCategory(title: String): String? = when (title) {
 
 @Composable
 private fun VitalCard(label: String, value: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(modifier.clickable(onClick = onClick), shape = RoundedCornerShape(11.dp), color = Color.White, border = BorderStroke(1.dp, Line)) {
+    Surface(modifier.clickable(onClick = onClick), shape = RoundedCornerShape(11.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, Line)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 10.dp)) {
             Text(label, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Text(value, color = Blue, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Tap to view details", color = Color(0xFF465264), fontSize = 12.sp)
+            Text("Tap to view details", color = Muted, fontSize = 12.sp)
         }
     }
 }

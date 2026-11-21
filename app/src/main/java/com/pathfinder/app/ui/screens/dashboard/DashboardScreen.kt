@@ -41,6 +41,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
     _,_->
 },
     catalogItems:List<OpportunityEntity> = emptyList(),
+    universityProgrammes:List<UniversityProgrammeEntity> = emptyList(),
     latestAssessment:AssessmentResultEntity?=null,
     onSaveOpportunity:(OpportunityEntity)->Unit={
     },
@@ -72,7 +73,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 title,sub,cat->onOpenDetails(title,sub,cat,"Explore")
             },{
                 onNavigate("Profile")
-            },catalogItems)
+                },catalogItems)
                   "Profile"->ProfileScreen(pad,{
                 onNavigate("SignIn")
             },notify,profileName,profileEmail,{
@@ -94,7 +95,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 onNavigate("Quiz")
             },{
                 onNavigate("Profile")
-            },catalogItems)
+            },catalogItems,universityProgrammes)
                  in listOf("Careers","Universities","Scholarships","Training","Assessment","Internships")->CategoryScreen(pad,
                 page,{
                 onNavigate("Home")

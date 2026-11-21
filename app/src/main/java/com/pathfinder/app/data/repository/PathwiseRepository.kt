@@ -17,6 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.pathfinder.app.data.local.PathwiseDatabase
 import com.pathfinder.app.data.local.defaultOpportunities
+import com.pathfinder.app.data.local.defaultUniversityProgrammes
 import com.pathfinder.app.data.model.*
 import com.pathfinder.app.data.validation.PathwiseInputValidation
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ class PathwiseRepository private constructor(private val context: Context) {
     private val activeEmailKey = stringPreferencesKey("active_user_email")
 
     fun observeCatalog(): Flow<List<OpportunityEntity>> = database.opportunities().observeAll()
+    fun observeUniversityProgrammes(): Flow<List<UniversityProgrammeEntity>> = database.universityProgrammes().observeAll()
 
     fun observeStudentAccounts(onError: (Exception) -> Unit = {}): Flow<List<PathwiseStudentAccount>> = callbackFlow {
         val registration = firestore.collection("users").whereEqualTo("role", "Student")
@@ -143,9 +145,29 @@ class PathwiseRepository private constructor(private val context: Context) {
     }
 
     suspend fun initialize(): PathwiseUserProfile? = withContext(Dispatchers.IO) {
-        if (database.opportunities().count() == 0) {
-            database.opportunities().insertAll(defaultOpportunities())
+        // Insert missing deterministic catalogue IDs even when a user's database already has
+        // content. Room IGNORE preserves existing/user-edited rows and makes this repeat-safe.
+        val catalogue = defaultOpportunities()
+        database.opportunities().insertAll(catalogue)
+        // Upgrade only unchanged starter rows whose original description is still present.
+        // UPDATE keeps their primary keys intact, so saved-item foreign keys are preserved.
+        val unchangedStarterDescriptions = mapOf(
+            "uni-malawi" to "Explore University of Malawi programmes, entry pathways, and admissions information.",
+            "career-cybersecurity" to "Identifies security risks, monitors threats, and supports incident response.",
+            "career-data" to "Uses statistics, programming, and domain knowledge to communicate evidence from data.",
+            "career-data-engineer" to "Builds and maintains software based on user and organisation needs."
+        )
+        catalogue.filter { it.id in unchangedStarterDescriptions }.forEach { updated ->
+            val current = database.opportunities().findById(updated.id)
+            if (current != null && current.title == updated.title && current.category == updated.category && current.overview == unchangedStarterDescriptions[updated.id]) {
+                database.opportunities().update(updated)
+            }
         }
+        // Programmes reference the stable university opportunity ID; IGNORE makes repeated seeding safe.
+        val verifiedProgrammes = defaultUniversityProgrammes().filter { programme ->
+            database.opportunities().findById(programme.universityId) != null
+        }
+        database.universityProgrammes().insertAll(verifiedProgrammes)
         val user = firebaseAuth.currentUser
         if (user == null) {
             val activeEmail = context.pathwisePreferences.data.first()[activeEmailKey] ?: return@withContext null
@@ -242,7 +264,7 @@ class PathwiseRepository private constructor(private val context: Context) {
         )
         try {
             val profileRef = firestore.collection("users").document(uid)
-            if (awaitFirebase(profileRef.get()).exists()) error("A profile already exists for this account.")
+            // set() writes the profile document to Firestore.
             awaitFirebase(profileRef.set(profileData))
         } catch (error: Throwable) {
             val cause = error.rootCause()
@@ -335,34 +357,45 @@ class PathwiseRepository private constructor(private val context: Context) {
             }
             throw cause
         }
-        if (!cloudProfile.exists() && localProfile != null) {
+        if (!cloudProfile.exists()) {
+            // Older Firebase Auth users may predate Firestore profiles. Backfill their
+            // profile under the Auth UID without replacing any existing document.
+            val authUser = firebaseAuth.currentUser ?: error("Firebase sign-in did not provide a user.")
             val now = System.currentTimeMillis()
+            val displayName = localProfile?.fullName?.takeIf { it.isNotBlank() }
+                ?: authUser.displayName?.takeIf { it.isNotBlank() }
+                ?: normalizedEmail.substringBefore("@").replace('.', ' ').replace('_', ' ')
+            val role = localProfile?.role?.takeIf { it in setOf("Student", "Counsellor", "Admin") } ?: "Student"
+            val createdAt = authUser.metadata?.creationTimestamp?.takeIf { it > 0 } ?: now
+            val missingProfile = mapOf(
+                "uid" to uid,
+                "fullName" to displayName,
+                "email" to normalizedEmail,
+                "role" to role,
+                "educationLevel" to "Exploring",
+                "createdAt" to createdAt,
+                "updatedAt" to now
+            )
             try {
-                awaitFirebase(profileRef.set(mapOf(
-                    "uid" to uid,
-                    "fullName" to localProfile.fullName,
-                    "email" to normalizedEmail,
-                    "role" to localProfile.role,
-                    "createdAt" to localProfile.updatedAt,
-                    "updatedAt" to now
-                )))
+                awaitFirebase(profileRef.set(missingProfile))
             } catch (error: Throwable) {
-                val cause = error.rootCause()
-                if (cause.canUseCachedProfile()) {
-                    if (selectedRole.isNotBlank() && !localProfile.role.equals(selectedRole, ignoreCase = true)) {
-                        firebaseAuth.signOut()
-                        return@withContext null
+                // A concurrent login could have created it; re-read before deciding
+                // that Firestore is unavailable or the account cannot continue.
+                val latest = runCatching { awaitFirebase(profileRef.get()) }.getOrNull()
+                if (latest?.exists() != true) {
+                    val cause = error.rootCause()
+                    if (localProfile != null && cause.canUseCachedProfile()) {
+                        if (selectedRole.isNotBlank() && !localProfile.role.equals(selectedRole, ignoreCase = true)) {
+                            firebaseAuth.signOut()
+                            return@withContext null
+                        }
+                        setActiveEmail(normalizedEmail)
+                        return@withContext PathwiseUserProfile(uid, localProfile.fullName, normalizedEmail, localProfile.role, cloudSynced = false)
                     }
-                    setActiveEmail(normalizedEmail)
-                    return@withContext PathwiseUserProfile(uid, localProfile.fullName, normalizedEmail, localProfile.role, cloudSynced = false)
+                    throw cause
                 }
-                throw cause
             }
             cloudProfile = awaitFirebase(profileRef.get())
-        }
-        if (!cloudProfile.exists()) {
-            firebaseAuth.signOut()
-            error("Your account profile is missing from Cloud Firestore.")
         }
         val profile = cloudProfile.toPathwiseProfile(uid)
         if (selectedRole.isNotBlank() && !profile.role.equals(selectedRole, ignoreCase = true)) {
@@ -440,6 +473,30 @@ class PathwiseRepository private constructor(private val context: Context) {
         PathwiseUserProfile(localUid(normalizedEmail), name.trim(), normalizedEmail, profile.role, cloudSynced = false)
     }
 
+    suspend fun updateProfileDetails(bio: String, educationSkills: String, careerPreferences: String) = withContext(Dispatchers.IO) {
+        val user = firebaseAuth.currentUser ?: error("Sign in with Firebase to sync profile details.")
+        val profileRef = firestore.collection("users").document(user.uid)
+        val snapshot = awaitFirebase(profileRef.get())
+        if (!snapshot.exists()) error("Your Firestore profile document is missing.")
+        awaitFirebase(profileRef.update(mapOf(
+            "bio" to bio.trim(),
+            "educationSkills" to educationSkills.trim(),
+            "careerPreferences" to careerPreferences.trim(),
+            "updatedAt" to System.currentTimeMillis()
+        )))
+    }
+
+    suspend fun loadProfileDetails(): Triple<String, String, String>? = withContext(Dispatchers.IO) {
+        val user = firebaseAuth.currentUser ?: return@withContext null
+        val snapshot = awaitFirebase(firestore.collection("users").document(user.uid).get())
+        if (!snapshot.exists()) return@withContext null
+        Triple(
+            snapshot.getString("bio").orEmpty(),
+            snapshot.getString("educationSkills").orEmpty(),
+            snapshot.getString("careerPreferences").orEmpty()
+        )
+    }
+
     suspend fun signOut() {
         context.pathwisePreferences.edit { it.remove(activeEmailKey) }
         firebaseAuth.signOut()
@@ -492,7 +549,8 @@ class PathwiseRepository private constructor(private val context: Context) {
         runCatching {
             database.assessments().insert(AssessmentResultEntity(
                 id = id, userEmail = firebaseAuth.currentUser?.email.orEmpty(),
-                resultSummary = summary, answers = answers.joinToString("\n"), completedAt = now
+                resultSummary = summary, answers = answers.joinToString("\n"), completedAt = now,
+                recommendations = paths.joinToString("\n")
             ))
         }
     }
@@ -565,7 +623,8 @@ class PathwiseRepository private constructor(private val context: Context) {
         userEmail = uid,
         resultSummary = getString("resultSummary").orEmpty(),
         answers = (get("answers") as? List<*>)?.filterIsInstance<String>()?.joinToString("\n").orEmpty(),
-        completedAt = getLong("completedAt") ?: 0L
+        completedAt = getLong("completedAt") ?: 0L,
+        recommendations = (get("recommendations") as? List<*>)?.filterIsInstance<String>()?.joinToString("\n").orEmpty()
     )
 
     private suspend fun migrateLegacyPrivateData(uid: String, email: String) {

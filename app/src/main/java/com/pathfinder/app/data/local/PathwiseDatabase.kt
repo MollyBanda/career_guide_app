@@ -2,6 +2,7 @@ package com.pathfinder.app.data.local
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
 import com.pathfinder.app.data.model.*
 import kotlinx.coroutines.flow.Flow
 
@@ -43,8 +44,26 @@ interface OpportunityDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: OpportunityEntity)
 
+    @Update
+    suspend fun update(item: OpportunityEntity)
+
     @Query("DELETE FROM opportunities WHERE id = :id")
     suspend fun deleteById(id: String)
+}
+
+@Dao
+interface UniversityProgrammeDao {
+    @Query("SELECT * FROM university_programmes ORDER BY universityId, programmeName COLLATE NOCASE")
+    fun observeAll(): Flow<List<UniversityProgrammeEntity>>
+
+    @Query("SELECT * FROM university_programmes WHERE universityId = :universityId ORDER BY programmeName COLLATE NOCASE")
+    fun observeForUniversity(universityId: String): Flow<List<UniversityProgrammeEntity>>
+
+    @Query("SELECT * FROM university_programmes WHERE universityId = :universityId ORDER BY programmeName COLLATE NOCASE")
+    suspend fun findForUniversity(universityId: String): List<UniversityProgrammeEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(items: List<UniversityProgrammeEntity>)
 }
 
 @Dao
@@ -72,13 +91,14 @@ interface AssessmentDao {
 }
 
 @Database(
-    entities = [UserProfileEntity::class, OpportunityEntity::class, SavedItemEntity::class, AssessmentResultEntity::class],
-    version = 1,
+    entities = [UserProfileEntity::class, OpportunityEntity::class, UniversityProgrammeEntity::class, SavedItemEntity::class, AssessmentResultEntity::class],
+    version = 3,
     exportSchema = true
 )
 abstract class PathwiseDatabase : RoomDatabase() {
     abstract fun userProfiles(): UserProfileDao
     abstract fun opportunities(): OpportunityDao
+    abstract fun universityProgrammes(): UniversityProgrammeDao
     abstract fun savedItems(): SavedItemDao
     abstract fun assessments(): AssessmentDao
 
@@ -90,7 +110,21 @@ abstract class PathwiseDatabase : RoomDatabase() {
                 context.applicationContext,
                 PathwiseDatabase::class.java,
                 "pathwise.db"
-            ).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+        }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `university_programmes` (`id` TEXT NOT NULL, `universityId` TEXT NOT NULL, `programmeName` TEXT NOT NULL, `award` TEXT NOT NULL, `duration` TEXT NOT NULL, `entryRequirements` TEXT NOT NULL, `requiredSubjects` TEXT NOT NULL, `facultyOrDepartment` TEXT NOT NULL, `studyLevel` TEXT NOT NULL, `applicationProcedure` TEXT NOT NULL, `officialUrl` TEXT NOT NULL, `sourceUrl` TEXT NOT NULL, `lastVerified` TEXT NOT NULL, `verificationNote` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`universityId`) REFERENCES `opportunities`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_university_programmes_universityId` ON `university_programmes` (`universityId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_university_programmes_universityId_programmeName` ON `university_programmes` (`universityId`, `programmeName`)")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `assessment_results` ADD COLUMN `recommendations` TEXT NOT NULL DEFAULT ''")
+            }
         }
     }
 }

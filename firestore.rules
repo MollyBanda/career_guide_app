@@ -29,7 +29,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.fullName is string
         && request.resource.data.updatedAt is int
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'bio', 'educationSkills', 'careerPreferences', 'updatedAt']);
       allow delete: if false;
 
       match /savedItems/{itemId} {

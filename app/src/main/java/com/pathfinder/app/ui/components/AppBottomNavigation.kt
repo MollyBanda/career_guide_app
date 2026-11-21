@@ -18,7 +18,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
 
 @Composable
 fun AppBottomNavigation(page: String, onNavigate: (String) -> Unit) {
-    Surface(color = Color.White, shadowElevation = 8.dp) {
+    Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
         Row(Modifier.fillMaxWidth().navigationBarsPadding().height(60.dp), verticalAlignment = Alignment.CenterVertically) {
             BottomTab(Icons.Filled.Home, "Home", page == "Home", { onNavigate("Home") }, Modifier.weight(1f))
             BottomTab(Icons.Filled.Search, "Explore", page == "Explore", { onNavigate("Explore") }, Modifier.weight(1f))

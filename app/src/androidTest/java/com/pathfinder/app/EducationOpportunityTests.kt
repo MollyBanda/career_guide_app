@@ -52,8 +52,8 @@ class EducationOpportunityTests {
     }
 
     @Test
-    fun CG_ENTRY_002_programWithoutRequirementsShowsAvailableFallbackDetails() {
-        val item = catalog.first { it.title == "Sample Computing Programme Without Requirements" }
+    fun CG_ENTRY_002_universityWithoutVerifiedProgrammesShowsHonestEmptyState() {
+        val item = catalog.first { it.title == "University of Malawi" }
         composeRule.setContent {
             PathwiseTheme {
                 CareerDetailsScreen(PaddingValues(), item.title, item.subtitle, item.category,
@@ -61,8 +61,8 @@ class EducationOpportunityTests {
             }
         }
         composeRule.onNodeWithText(item.title).assertExists()
-        composeRule.onNodeWithText("Programmes and admission").assertExists()
-        composeRule.onNodeWithText("Entry requirements not available").assertDoesNotExist()
+        composeRule.onNodeWithText("Programmes Offered").assertExists()
+        composeRule.onNodeWithText("No programme details have been verified for this university yet. Check its official programme catalogue for current awards and admissions.").assertExists()
     }
 
     @Test

@@ -4,7 +4,7 @@
 
 The test folders use the same two-source-set layout shown in the supplied Android Studio screenshots. In **Android** view expand **app → kotlin+java → com.pathfinder.app (androidTest)** for device/emulator UI tests and **com.pathfinder.app (test)** for local JVM unit tests. In **Project** view, the same files are under `app/src/androidTest/java/com/pathfinder/app` and `app/src/test/java/com/pathfinder/app`.
 
-Latest run on the Pixel 6 API 34 emulator: **50 instrumentation tests, 0 failures, 1 skipped** (the signed-in logout flow could not create a Firebase account in this environment); **20 JVM unit tests passed**. The instrumentation run is a mix of isolated Compose screen tests and one app-level journey; it does not certify all PDF expected results or live Firestore persistence.
+Recorded baseline from an earlier project revision: **50 instrumentation tests, 0 failures, 1 skipped** and **20 JVM unit tests passed**. The current catalogue changes add tests that have not yet executed. The latest attempt could not start Gradle because Windows denied access to the Gradle `native-platform.dll` lock under the user Gradle cache. The baseline therefore does not certify this revision or live Firestore persistence.
 
 ### Instrumented UI tests (`androidTest`)
 
@@ -17,6 +17,7 @@ Latest run on the Pixel 6 API 34 emulator: **50 instrumentation tests, 0 failure
 - `AuthScreensTest.kt` — original PDF registration/login cases and form feedback.
 - `BrowseAndCareerTests.kt` — career details/search, assessment/recommendations, and saved items.
 - `EducationOpportunityTests.kt` — universities, programme requirements, scholarships, training, and internships.
+- `UniversityProgrammeNavigationTest.kt` — university list → institution profile → only that institution's programme → programme details.
 - `ProfileScreenTests.kt` — profile display/edit validation and logout action.
 - `LogoutBackNavigationTest.kt` — creates or resumes a test account, then checks logout and Android Back navigation.
 - `ScenarioCatalogue.kt` — isolated catalogue fixtures used by screen tests; it is test data, not a test class.
@@ -29,6 +30,7 @@ Latest run on the Pixel 6 API 34 emulator: **50 instrumentation tests, 0 failure
 - `CareerCatalogueTests.kt` — career detail data and the Software Developer scenario.
 - `AssessmentValidationTests.kt` — exactly five nonblank answers are required.
 - `UniversityCatalogueTests.kt` — university and programme requirement data.
+- `ExpandedCatalogueTests.kt` — requested catalogue counts, source dates, and application-cycle status.
 - `ScholarshipCatalogueTests.kt` — provider, eligibility, deadline, and application source data.
 - `TrainingInternshipCatalogueTests.kt` — training/internship content and requirements.
 - `ProfileValidationTests.kt` — profile name validation.

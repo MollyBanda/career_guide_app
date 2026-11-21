@@ -86,7 +86,7 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
                 Surface(
                     modifier = Modifier.weight(1f).height(38.dp).clickable { accountRole = option },
                     shape = RoundedCornerShape(10.dp),
-                    color = if (selected) Color(0xFFF0F3FF) else Color.White,
+                    color = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, if (selected) Blue else Border)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -106,7 +106,7 @@ fun SignUpScreen(back: () -> Unit, signIn: () -> Unit, notify: (String) -> Unit,
                         Surface(
                             modifier = Modifier.weight(1f).height(38.dp).clickable { level = option },
                             shape = RoundedCornerShape(10.dp),
-                            color = if (selected) Color(0xFFF0F3FF) else Color.White,
+                            color = if (selected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, if (selected) Blue else Border)
                         ) {
                             Row(Modifier.fillMaxSize().padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically,
@@ -221,8 +221,8 @@ private fun FormField(
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = Border,
                 focusedBorderColor = Blue,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
             ),
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, color = Navy)
         )
@@ -250,7 +250,7 @@ private fun DividerText(label: String) {
 private fun ProviderButton(mark: String, name: String, modifier: Modifier = Modifier, action: () -> Unit) {
     OutlinedButton(onClick = action, modifier = modifier.height(40.dp),
         shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, Border),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)) {
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Text(mark, color = if (name == "Google") Color(0xFF4285F4) else Navy, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.width(7.dp)); Text(name, color = Navy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }

@@ -25,6 +25,8 @@ import com.pathfinder.app.ui.theme.DashboardColors.Blue
 import com.pathfinder.app.ui.theme.DashboardColors.Line
 import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 import com.pathfinder.app.data.validation.PathwiseInputValidation
+import com.pathfinder.app.data.repository.PathwiseRepository
+import kotlinx.coroutines.launch
 
 
 @Composable fun ProfileScreen(pad:PaddingValues,onLogout:()->Unit,notify:(String)->Unit,initialName:String,
@@ -32,10 +34,27 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
     latestAssessment:AssessmentResultEntity?,savedTitles:Set<String> = emptySet(),onOpenSaved:()->Unit = {}){
 
      val context = LocalContext.current
+     val scope = rememberCoroutineScope()
+     val repository = remember { PathwiseRepository.get(context) }
      val profileFields = remember(initialEmail) { context.getSharedPreferences("pathwise_profile_fields", 0) }
      val bio = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.bio", "").orEmpty()) }
      val educationSkills = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.education_skills", "").orEmpty()) }
      val careerPreferences = remember(initialEmail) { mutableStateOf(profileFields.getString("$initialEmail.career_preferences", "").orEmpty()) }
+     LaunchedEffect(initialEmail) {
+         runCatching { repository.loadProfileDetails() }.onSuccess { details ->
+             details ?: return@onSuccess
+             bio.value = details.first
+             educationSkills.value = details.second
+             careerPreferences.value = details.third
+             profileFields.edit()
+                 .putString("$initialEmail.bio", details.first)
+                 .putString("$initialEmail.education_skills", details.second)
+                 .putString("$initialEmail.career_preferences", details.third)
+                 .apply()
+         }.onFailure {
+             notify("Could not load your saved profile details: ${repository.explainAccountError(it)}")
+         }
+     }
      var editingSection by remember { mutableStateOf<String?>(null) }
      var sectionDraft by remember { mutableStateOf("") }
      val editing=remember {
@@ -57,7 +76,7 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
 
            DashboardHeader("Profile",onProfile=onProfile)
         Spacer(Modifier.height(15.dp))
-          Surface(shape=RoundedCornerShape(14.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+          Surface(shape=RoundedCornerShape(14.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
                 Column(Modifier.fillMaxWidth().padding(12.dp)){
 
@@ -113,7 +132,7 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
         }
 
           Spacer(Modifier.height(11.dp))
-        Surface(shape=RoundedCornerShape(14.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+        Surface(shape=RoundedCornerShape(14.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
                Column(Modifier.fillMaxWidth().padding(12.dp)){
 
@@ -142,10 +161,13 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
 
         if (latestAssessment != null) {
             Spacer(Modifier.height(12.dp))
-            Surface(shape = RoundedCornerShape(12.dp), color = Color.White, border = BorderStroke(1.dp, Line)) {
+            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, Line)) {
                 Column(Modifier.fillMaxWidth().padding(11.dp)) {
                     Text("LATEST ASSESSMENT", color = Blue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(latestAssessment.resultSummary, Modifier.padding(top = 5.dp), color = Ink, fontSize = 11.sp, lineHeight = 16.sp)
+                    if (latestAssessment.recommendations.isNotBlank()) {
+                        Text("Suggested paths: " + latestAssessment.recommendations.replace("\n", " · "), Modifier.padding(top = 5.dp), color = Ink, fontSize = 10.sp, lineHeight = 14.sp)
+                    }
                     Text("Completed " + java.text.DateFormat.getDateInstance().format(java.util.Date(latestAssessment.completedAt)), Modifier.padding(top = 5.dp), color = Muted, fontSize = 9.sp)
                 }
             }
@@ -213,7 +235,15 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
                          else -> { careerPreferences.value = sectionDraft; profileFields.edit().putString("$initialEmail.career_preferences", sectionDraft).apply() }
                      }
                      editingSection = null
-                     notify("$section saved on this device.")
+                     scope.launch {
+                         runCatching {
+                             repository.updateProfileDetails(bio.value, educationSkills.value, careerPreferences.value)
+                         }.onSuccess {
+                             notify("$section saved to your account.")
+                         }.onFailure {
+                             notify("$section saved on this device. Cloud sync failed: ${repository.explainAccountError(it)}")
+                         }
+                     }
                  }) { Text("Save") }
              },
              dismissButton = { TextButton(onClick = { editingSection = null }) { Text("Cancel") } }
@@ -224,7 +254,7 @@ import com.pathfinder.app.data.validation.PathwiseInputValidation
 @Composable private fun ProfileRow(title:String,subtitle:String,icon:String,onClick:()->Unit){
 
      Surface(Modifier.fillMaxWidth().padding(top=7.dp).clickable(onClick=onClick),shape=RoundedCornerShape(11.dp),
-        color=Color.White,border=BorderStroke(1.dp,Line)){
+        color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
           Row(Modifier.padding(9.dp),verticalAlignment=Alignment.CenterVertically){
             FeatureIcon(icon)

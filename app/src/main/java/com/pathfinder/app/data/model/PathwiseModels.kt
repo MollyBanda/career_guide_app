@@ -37,6 +37,35 @@ data class OpportunityEntity(
 )
 
 @Entity(
+    tableName = "university_programmes",
+    foreignKeys = [
+        ForeignKey(
+            entity = OpportunityEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["universityId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["universityId"]), Index(value = ["universityId", "programmeName"], unique = true)]
+)
+data class UniversityProgrammeEntity(
+    @PrimaryKey val id: String,
+    val universityId: String,
+    val programmeName: String,
+    val award: String,
+    val duration: String,
+    val entryRequirements: String,
+    val requiredSubjects: String,
+    val facultyOrDepartment: String,
+    val studyLevel: String,
+    val applicationProcedure: String,
+    val officialUrl: String,
+    val sourceUrl: String,
+    val lastVerified: String,
+    val verificationNote: String = ""
+)
+
+@Entity(
     tableName = "saved_items",
     primaryKeys = ["userEmail", "opportunityId"],
     foreignKeys = [
@@ -79,5 +108,6 @@ data class AssessmentResultEntity(
     val userEmail: String,
     val resultSummary: String,
     val answers: String,
-    val completedAt: Long = System.currentTimeMillis()
+    val completedAt: Long = System.currentTimeMillis(),
+    val recommendations: String = ""
 )

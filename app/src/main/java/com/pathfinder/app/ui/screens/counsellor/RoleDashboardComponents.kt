@@ -28,7 +28,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
 
      Surface(modifier.clickable{
         notify("$label metrics opened.")
-    },shape=RoundedCornerShape(10.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+    },shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
           Column(Modifier.padding(horizontal=7.dp,vertical=8.dp)){
             Text(label,color=Ink,fontSize=13.sp,maxLines=2)
@@ -50,7 +50,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
 }
 @Composable fun ActionCard(title:String,description:String,meta:String,action:String,onAction:()->Unit){
 
-     Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(11.dp),color=Color.White,
+     Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(11.dp),color=MaterialTheme.colorScheme.surface,
         border=BorderStroke(1.dp,Line)){
 
           Row(Modifier.padding(horizontal=9.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
@@ -94,7 +94,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
 }
 @Composable fun RegistryCard(title:String,subtitle:String,icon:String,modifier:Modifier,onClick:()->Unit){
 
-     Surface(modifier.fillMaxWidth().padding(bottom=6.dp).clickable(onClick=onClick),shape=RoundedCornerShape(10.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+     Surface(modifier.fillMaxWidth().padding(bottom=6.dp).clickable(onClick=onClick),shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
           Row(Modifier.padding(8.dp),verticalAlignment=Alignment.CenterVertically){
             FeatureIcon(icon)
@@ -110,7 +110,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Line
 }
 @Composable fun ReviewCard(title:String,description:String,tag:String,onReview:()->Unit,onApprove:()->Unit){
 
-     Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(10.dp),color=Color.White,
+     Surface(Modifier.fillMaxWidth().padding(bottom=6.dp),shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surface,
         border=BorderStroke(1.dp,Line)){
 
           Column(Modifier.fillMaxWidth().padding(9.dp)){

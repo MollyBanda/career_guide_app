@@ -36,7 +36,9 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
          mutableStateOf("All Matches")
     }
 
-     val careers=catalogItems.filter { it.category != "Assessment" }.map { item ->
+     val careers=catalogItems.filter { item ->
+        item.category != "Assessment" && (item.category!="Universities" || item.id=="uni-malawi" || item.id.startsWith("uni-expanded-"))
+    }.map { item ->
         Triple(iconName(item.category,item.title),item.title,item.subtitle)
     }
      val visibleCareers=careers.filter {
@@ -69,7 +71,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
             }){
                 Text("×",fontSize=20.sp,color=Muted)
             }
-        },colors=OutlinedTextFieldDefaults.colors(unfocusedContainerColor=Color.White,focusedContainerColor=Color.White,
+        },colors=OutlinedTextFieldDefaults.colors(unfocusedContainerColor=MaterialTheme.colorScheme.surface,focusedContainerColor=MaterialTheme.colorScheme.surface,
             unfocusedBorderColor=Line,focusedBorderColor=Blue))
            Spacer(Modifier.height(13.dp))
         Row(verticalAlignment=Alignment.CenterVertically){
@@ -111,7 +113,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 @Composable private fun ExploreCareerCard(icon:String,title:String,subtitle:String,match:String,onClick:()->Unit){
 
      Surface(Modifier.fillMaxWidth().padding(top=7.dp).clickable(onClick=onClick),shape=RoundedCornerShape(12.dp),
-        color=Color.White,border=BorderStroke(1.dp,Line)){
+        color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
           Column(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=9.dp)){
             Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically){

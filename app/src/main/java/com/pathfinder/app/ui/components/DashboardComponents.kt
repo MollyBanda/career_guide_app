@@ -67,7 +67,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
 
           Surface(color=Blue,shape=RoundedCornerShape(9.dp)){
             Box(Modifier.size(31.dp),contentAlignment=Alignment.Center){
-                Text("⌁",color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold)
+                Text("⌁",color=MaterialTheme.colorScheme.onPrimary,fontSize=21.sp,fontWeight=FontWeight.Bold)
             }
         }
 
@@ -92,8 +92,8 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
     }
 }
 @Composable fun Pill(text:String,active:Boolean=false){
-    Surface(shape=CircleShape,color=if(active) Blue else Color.White,border=BorderStroke(1.dp,if(active) Blue else Line)){
-        Text(text,Modifier.padding(horizontal=8.dp,vertical=6.dp),color=if(active) Color.White else Muted,
+    Surface(shape=CircleShape,color=if(active) Blue else MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,if(active) Blue else Line)){
+          Text(text,Modifier.padding(horizontal=8.dp,vertical=6.dp),color=if(active) MaterialTheme.colorScheme.onPrimary else Muted,
             fontSize=10.sp,fontWeight=FontWeight.SemiBold)
     }
 }
@@ -109,7 +109,7 @@ fun iconName(category:String,title:String):String=when(category){
 @Composable fun Opportunity(icon:String,title:String,subtitle:String,click:()->Unit,isSaved:Boolean,
     onToggleSave:(String)->Unit){
 
-     Surface(Modifier.fillMaxWidth().clickable(onClick=click),shape=RoundedCornerShape(10.dp),color=Color.White,
+     Surface(Modifier.fillMaxWidth().clickable(onClick=click),shape=RoundedCornerShape(10.dp),color=MaterialTheme.colorScheme.surface,
         border=BorderStroke(1.dp,Line)){
 
             Row(Modifier.padding(9.dp),verticalAlignment=Alignment.CenterVertically){
@@ -136,7 +136,7 @@ fun iconName(category:String,title:String):String=when(category){
      Surface(Modifier.clickable(onClick=onClick),shape=CircleShape,color=if(selected) Blue else Color.White,
         border=BorderStroke(1.dp,if(selected) Blue else Line)){
 
-          Text(label,Modifier.padding(horizontal=9.dp,vertical=7.dp),color=if(selected) Color.White else Muted,
+          Text(label,Modifier.padding(horizontal=9.dp,vertical=7.dp),color=if(selected) MaterialTheme.colorScheme.onPrimary else Muted,
             fontSize=10.sp,fontWeight=FontWeight.SemiBold)
     }
 

@@ -17,6 +17,6 @@ fun PrimaryButton(label: String, action: () -> Unit) {
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Blue),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)) {
-        Text(label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
     }
 }

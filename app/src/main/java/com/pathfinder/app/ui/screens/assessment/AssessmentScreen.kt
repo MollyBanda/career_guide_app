@@ -57,7 +57,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
         Spacer(Modifier.height(17.dp))
           if(result.value){
 
-               Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp),color=Color.White,border=BorderStroke(1.dp,
+               Surface(Modifier.fillMaxWidth(),shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,
                 Line)){
 
                     Column(Modifier.padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally){
@@ -86,7 +86,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Muted
                questions[index.value].second.forEach {
                  answer->Surface(Modifier.fillMaxWidth().padding(bottom=8.dp).clickable{
                     selected.value=answer
-                },shape=RoundedCornerShape(11.dp),color=if(selected.value==answer) Color(0xFFE8EDFF) else Color.White,
+                },shape=RoundedCornerShape(11.dp),color=if(selected.value==answer) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                     border=BorderStroke(1.dp,if(selected.value==answer) Blue else Line)){
 
                         Text(answer,Modifier.fillMaxWidth().padding(horizontal=13.dp,vertical=13.dp),color=if(selected.value==answer) Blue else Ink,

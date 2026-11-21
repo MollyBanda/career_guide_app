@@ -158,7 +158,52 @@ class BrowseAndCareerTests {
             }
         }
         composeRule.onNodeWithText("Software Engineer").assertExists()
-        composeRule.onNodeWithText("SAVED CAREERS").assertExists()
+        composeRule.onNodeWithText("SAVED ITEMS").assertExists()
+    }
+
+    @Test
+    fun CG_SAVE_004_savedCareerOpensItsDetails() {
+        var opened: Triple<String, String, String>? = null
+        composeRule.setContent {
+            PathwiseTheme {
+                SavedScreen(PaddingValues(), {}, {}, setOf("Software Engineer"), {},
+                    { title, subtitle, category -> opened = Triple(title, subtitle, category) }, {}, catalog)
+            }
+        }
+        composeRule.onNodeWithText("Software Engineer").performClick()
+        composeRule.runOnIdle {
+            assertEquals("Software Engineer", opened?.first)
+            assertEquals("Careers", opened?.third)
+        }
+    }
+
+    @Test
+    fun CG_SAVE_005_savedScreenShowsOnlyItemsTheUserSaved() {
+        composeRule.setContent {
+            PathwiseTheme {
+                SavedScreen(PaddingValues(), {}, {}, setOf("Software Engineer", "Commonwealth Master's Scholarship", "Career Skills Bootcamp"), {}, { _, _, _ -> }, {}, catalog)
+            }
+        }
+        composeRule.onNodeWithText("Software Engineer").assertExists()
+        composeRule.onNodeWithText("Commonwealth Master's Scholarship").assertExists()
+        composeRule.onNodeWithText("Career Skills Bootcamp").assertExists()
+        composeRule.onNodeWithText("University of Malawi").assertDoesNotExist()
+    }
+
+    @Test
+    fun CG_SAVE_006_savedScholarshipOpensItsDetails() {
+        var opened: Triple<String, String, String>? = null
+        composeRule.setContent {
+            PathwiseTheme {
+                SavedScreen(PaddingValues(), {}, {}, setOf("Commonwealth Master's Scholarship"), {},
+                    { title, subtitle, category -> opened = Triple(title, subtitle, category) }, {}, catalog)
+            }
+        }
+        composeRule.onNodeWithText("Commonwealth Master's Scholarship").performClick()
+        composeRule.runOnIdle {
+            assertEquals("Commonwealth Master's Scholarship", opened?.first)
+            assertEquals("Scholarships", opened?.third)
+        }
     }
 
     @Test
@@ -166,7 +211,7 @@ class BrowseAndCareerTests {
         composeRule.setContent {
             PathwiseTheme { SavedScreen(PaddingValues(), {}, {}, emptySet(), {}, { _, _, _ -> }, {}, catalog) }
         }
-        composeRule.onNodeWithText("Nothing saved yet. Bookmark a career or opportunity to keep it here.").assertExists()
+        composeRule.onNodeWithText("Nothing saved yet. Bookmark an item to keep it here.").assertExists()
     }
 
     @Test

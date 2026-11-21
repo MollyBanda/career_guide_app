@@ -55,7 +55,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                             "Internships"->"Internships"
                             else->"Careers"
                         })
-                    },shape=RoundedCornerShape(11.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+                    },shape=RoundedCornerShape(11.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
 
                              Column(Modifier.padding(9.dp)){
                             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
@@ -82,7 +82,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 
            Surface(Modifier.clickable{
             onOpenDetails("UX Designer","Design & Technology","Careers")
-        },shape=RoundedCornerShape(12.dp),color=Color.White,border=BorderStroke(1.dp,Line)){
+        },shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,Line)){
             Column(Modifier.padding(10.dp)){
 
                     Row(verticalAlignment=Alignment.CenterVertically){
@@ -106,12 +106,8 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
             Opportunity("scholarship","Future Leaders Scholarship","Full tuition · Scholarship",{
             onOpenDetails("Future Leaders Scholarship","Full tuition · Scholarship","Scholarships")
         },"Future Leaders Scholarship" in savedTitles,onToggleSave)
-        Spacer(Modifier.height(6.dp))
-        Opportunity("degree","Bachelor of Science in Computer Science","University program · 3–4 years",{
-            onOpenDetails("Bachelor of Science in Computer Science","University program · 3–4 years","Universities")
-        },"Bachelor of Science in Computer Science" in savedTitles,onToggleSave)
           Spacer(Modifier.height(9.dp))
-           Surface(Modifier.fillMaxWidth().clickable(onClick=startQuiz),shape=RoundedCornerShape(12.dp),color=Blue){
+           Surface(Modifier.fillMaxWidth().clickable(onClick=startQuiz),shape=RoundedCornerShape(12.dp),color=Color(0xFF0754D1)){
             Row(Modifier.padding(11.dp),verticalAlignment=Alignment.CenterVertically){
 
                    Column(Modifier.weight(1f)){
@@ -121,7 +117,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
                 }
 
                     Button(onClick=startQuiz,contentPadding=PaddingValues(horizontal=11.dp,vertical=5.dp),
-                    shape=CircleShape,colors=ButtonDefaults.buttonColors(containerColor=Color.White,contentColor=Blue)){
+                    shape=CircleShape,colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.surface,contentColor=Blue)){
                     Text("Start Quiz",fontSize=10.sp,fontWeight=FontWeight.Bold)
                 }
 
