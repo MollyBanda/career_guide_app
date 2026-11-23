@@ -2,7 +2,7 @@ package com.pathfinder.app.data.validation
 
 /** Shared, side-effect-free validation used by the forms and local unit tests. */
 object PathwiseInputValidation {
-    val registrationRoles = listOf("Student", "Counsellor", "Admin")
+    val registrationRoles = listOf("Student", "Counsellor")
 
     private val emailPattern = Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
 

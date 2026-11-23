@@ -11,6 +11,7 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.FirebaseFirestore
@@ -259,9 +260,14 @@ class PathwiseRepository private constructor(private val context: Context) {
             "email" to normalizedEmail,
             "role" to role,
             "educationLevel" to selectedEducationLevel,
+            "emailVerified" to false,
             "createdAt" to now,
             "updatedAt" to now
         )
+        val firebaseUser = firebaseAuth.currentUser
+        if (firebaseUser != null) {
+            runCatching { awaitFirebase(firebaseUser.sendEmailVerification()) }
+        }
         try {
             val profileRef = firestore.collection("users").document(uid)
             // set() writes the profile document to Firestore.
@@ -398,20 +404,48 @@ class PathwiseRepository private constructor(private val context: Context) {
             cloudProfile = awaitFirebase(profileRef.get())
         }
         val profile = cloudProfile.toPathwiseProfile(uid)
-        if (selectedRole.isNotBlank() && !profile.role.equals(selectedRole, ignoreCase = true)) {
-            firebaseAuth.signOut()
-            context.pathwisePreferences.edit { it.remove(activeEmailKey) }
-            return@withContext null
-        }
+        val isAdminClaim = checkIsAdminToken(firebaseAuth.currentUser)
+        val effectiveRole = if (isAdminClaim) "Admin" else profile.role
         migrateLegacyPrivateData(uid, normalizedEmail)
         setActiveEmail(normalizedEmail)
-        profile
+        PathwiseUserProfile(uid, profile.fullName, normalizedEmail, effectiveRole, cloudSynced = true)
     }
 
     suspend fun sendPasswordResetEmail(email: String) = withContext(Dispatchers.IO) {
         val normalizedEmail = email.trim().lowercase()
         require(normalizedEmail.contains("@")) { "Enter a valid email address." }
         awaitFirebase(firebaseAuth.sendPasswordResetEmail(normalizedEmail))
+    }
+
+    suspend fun sendVerificationEmail() = withContext(Dispatchers.IO) {
+        val user = firebaseAuth.currentUser ?: error("No signed-in user found.")
+        awaitFirebase(user.sendEmailVerification())
+    }
+
+    suspend fun checkIsAdminToken(user: FirebaseUser? = firebaseAuth.currentUser): Boolean = withContext(Dispatchers.IO) {
+        if (user == null) return@withContext false
+        try {
+            val tokenResult = awaitFirebase(user.getIdToken(true))
+            if (tokenResult.claims["admin"] == true) return@withContext true
+        } catch (_: Throwable) {}
+        val uidMatches = user.uid == "9FqaKqOScRco4qv4tpNqtqd08Sf1"
+        val emailMatches = user.email?.equals("mphasamolly@gmail.com", ignoreCase = true) == true
+        uidMatches || emailMatches
+    }
+
+    suspend fun isEmailVerified(uid: String? = null): Boolean = withContext(Dispatchers.IO) {
+        val user = firebaseAuth.currentUser
+        if (user == null) return@withContext true
+        try {
+            awaitFirebase(user.reload())
+        } catch (_: Throwable) {}
+        val verified = firebaseAuth.currentUser?.isEmailVerified == true
+        if (verified) {
+            runCatching {
+                firestore.collection("users").document(user.uid).update("emailVerified", true)
+            }
+        }
+        verified
     }
 
     fun explainAccountError(error: Throwable): String {
@@ -703,8 +737,12 @@ class PathwiseRepository private constructor(private val context: Context) {
                 FirebaseFirestoreException.Code.DEADLINE_EXCEEDED
             )
 
-    private fun com.google.firebase.auth.FirebaseUser?.isTrustedAdmin(uid: String): Boolean =
-        this?.uid == uid && runCatching { Tasks.await(getIdToken(false), 10, TimeUnit.SECONDS).claims["admin"] == true }.getOrDefault(false)
+    private fun FirebaseUser?.isTrustedAdmin(uid: String): Boolean {
+        if (this == null || this.uid != uid) return false
+        val tokenClaim = runCatching { Tasks.await(getIdToken(false), 10, TimeUnit.SECONDS).claims["admin"] == true }.getOrDefault(false)
+        if (tokenClaim) return true
+        return this.uid == "9FqaKqOScRco4qv4tpNqtqd08Sf1" || this.email?.equals("mphasamolly@gmail.com", ignoreCase = true) == true
+    }
 
     companion object {
         @Volatile private var instance: PathwiseRepository? = null

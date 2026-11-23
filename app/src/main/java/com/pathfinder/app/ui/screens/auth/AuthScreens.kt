@@ -27,6 +27,7 @@ import com.pathfinder.app.ui.theme.AuthColors.Muted
 import com.pathfinder.app.ui.theme.AuthColors.Navy
 import com.pathfinder.app.ui.components.PrimaryButton
 import com.pathfinder.app.data.validation.PathwiseInputValidation
+import kotlinx.coroutines.delay
 
 @Composable
 private fun Header(back: () -> Unit, title: String) {
@@ -262,6 +263,152 @@ private fun SwitchLine(prefix: String, actionText: String, action: () -> Unit) {
         Text(prefix, color = Muted, fontSize = 12.sp)
         TextButton(onClick = action, contentPadding = PaddingValues(start = 4.dp, end = 0.dp)) {
             Text(actionText, color = Blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun VerifyEmailScreen(
+    email: String,
+    notify: (String) -> Unit,
+    onCheckVerified: () -> Unit,
+    onResendEmail: () -> Unit,
+    onBackToLogin: () -> Unit
+) {
+    var isResending by remember { mutableStateOf(false) }
+    var isChecking by remember { mutableStateOf(false) }
+    var cooldownSeconds by remember { mutableStateOf(0) }
+
+    LaunchedEffect(cooldownSeconds) {
+        if (cooldownSeconds > 0) {
+            delay(1000L)
+            cooldownSeconds--
+        }
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 23.dp, vertical = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Header(onBackToLogin, "EMAIL VERIFICATION")
+        Spacer(Modifier.height(20.dp))
+        Surface(
+            color = Color(0xFFE8EDFF),
+            shape = CircleShape,
+            modifier = Modifier.size(72.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.MarkEmailUnread,
+                    contentDescription = "Unread Email",
+                    tint = Blue,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text(
+            text = "Verify Your Email Address",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Navy,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "We have sent a verification link to your email address. Please open your inbox and click the link to verify your email before continuing to Pathwise",
+            modifier = Modifier.padding(top = 10.dp, bottom = 14.dp),
+            color = Muted,
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
+            textAlign = TextAlign.Center
+        )
+        if (email.isNotBlank()) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, Border),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+            ) {
+                Text(
+                    text = email,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    color = Blue,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Surface(
+            color = Color(0xFFFFF8E7),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, Color(0xFFFFE0B2)),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = Color(0xFFE65100),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "If you don't see the email, check your spam or junk folder.",
+                    color = Color(0xFFBF360C),
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+
+        PrimaryButton(if (isChecking) "Checking Status..." else "I Have Verified My Email") {
+            if (!isChecking) {
+                isChecking = true
+                onCheckVerified()
+                isChecking = false
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = {
+                if (!isResending && cooldownSeconds == 0) {
+                    isResending = true
+                    onResendEmail()
+                    isResending = false
+                    cooldownSeconds = 30
+                }
+            },
+            enabled = !isResending && cooldownSeconds == 0,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(11.dp),
+            border = BorderStroke(1.dp, if (cooldownSeconds > 0) Border else Blue),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Blue)
+        ) {
+            Text(
+                text = when {
+                    isResending -> "Sending Email..."
+                    cooldownSeconds > 0 -> "Resend Email in ${cooldownSeconds}s"
+                    else -> "Resend Verification Email"
+                },
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        TextButton(onClick = onBackToLogin) {
+            Text("Back to Login", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

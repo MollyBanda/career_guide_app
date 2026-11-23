@@ -69,6 +69,7 @@ fun PathwiseApp(notify: (String) -> Unit) {
     var detailSubtitle by remember { mutableStateOf("") }
     var detailCategory by remember { mutableStateOf("Careers") }
     var detailReturn by remember { mutableStateOf("Home") }
+    var unverifiedEmail by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         try {
@@ -78,7 +79,13 @@ fun PathwiseApp(notify: (String) -> Unit) {
                 activeRole = account.role
                 profileName = account.fullName
                 profileEmail = account.email
-                screen = AppScreen.Home
+                val isVerified = repository.isEmailVerified(account.uid)
+                if (account.cloudSynced && !isVerified) {
+                    unverifiedEmail = account.email
+                    screen = AppScreen.VerifyEmail
+                } else {
+                    screen = AppScreen.Home
+                }
                 if (!account.cloudSynced) notify("Signed in with this device's cached profile. Firebase cloud sync is still pending.")
             }
         } catch (error: Exception) {
@@ -129,8 +136,15 @@ fun PathwiseApp(notify: (String) -> Unit) {
                                     activeRole = account.role
                                     profileName = account.fullName
                                     profileEmail = account.email
-                                    screen = AppScreen.Home
-                                    if (!account.cloudSynced) notify("Signed in with this device's cached profile. Firebase cloud sync is still pending.")
+                                    val isVerified = repository.isEmailVerified(account.uid)
+                                    if (account.cloudSynced && !isVerified) {
+                                        unverifiedEmail = account.email
+                                        screen = AppScreen.VerifyEmail
+                                        notify("A verification link has been sent to ${account.email}. Please verify your email address.")
+                                    } else {
+                                        screen = AppScreen.Home
+                                        if (!account.cloudSynced) notify("Signed in with this device's cached profile. Firebase cloud sync is still pending.")
+                                    }
                                 }
                             } catch (error: Exception) {
                                 notify(repository.explainAccountError(error))
@@ -156,8 +170,15 @@ fun PathwiseApp(notify: (String) -> Unit) {
                                     activeRole = account.role
                                     profileName = account.fullName
                                     profileEmail = account.email
-                                    screen = AppScreen.Home
-                                    notify(if (account.cloudSynced) "Account created successfully." else "Account created. Cloud profile sync is pending; you can continue using the app on this device.")
+                                    val isVerified = repository.isEmailVerified(account.uid)
+                                    if (account.cloudSynced && !isVerified) {
+                                        unverifiedEmail = account.email
+                                        screen = AppScreen.VerifyEmail
+                                        notify("A verification email has been sent to ${account.email}. Please verify your email before continuing.")
+                                    } else {
+                                        screen = AppScreen.Home
+                                        notify(if (account.cloudSynced) "Account created successfully." else "Account created. Cloud profile sync is pending; you can continue using the app on this device.")
+                                    }
                                 }
                             } catch (error: Exception) {
                                 val localAccount = runCatching {
@@ -177,6 +198,44 @@ fun PathwiseApp(notify: (String) -> Unit) {
                                 isWorking = false
                             }
                         }
+                    }
+                )
+                AppScreen.VerifyEmail -> VerifyEmailScreen(
+                    email = unverifiedEmail.ifBlank { profileEmail },
+                    notify = notify,
+                    onCheckVerified = {
+                        scope.launch {
+                            isWorking = true
+                            try {
+                                val verified = repository.isEmailVerified(activeUid)
+                                if (verified) {
+                                    screen = AppScreen.Home
+                                    notify("Email verified successfully! Welcome to Pathwise.")
+                                } else {
+                                    notify("Email not verified yet. Please check your inbox and click the verification link.")
+                                }
+                            } catch (error: Exception) {
+                                notify(repository.explainAccountError(error))
+                            } finally {
+                                isWorking = false
+                            }
+                        }
+                    },
+                    onResendEmail = {
+                        scope.launch {
+                            try {
+                                repository.sendVerificationEmail()
+                                notify("Verification email sent to ${unverifiedEmail.ifBlank { profileEmail }}. Check your inbox and spam folder.")
+                            } catch (error: Exception) {
+                                notify(repository.explainAccountError(error))
+                            }
+                        }
+                    },
+                    onBackToLogin = {
+                        scope.launch { repository.signOut() }
+                        activeUid = null
+                        activeRole = "Student"
+                        screen = AppScreen.SignIn
                     }
                 )
                 else -> DashboardScreen(
@@ -250,14 +309,11 @@ fun PathwiseApp(notify: (String) -> Unit) {
                     onToggleSave = { title ->
                         val uid = activeUid
                         scope.launch {
-                            isWorking = true
                             try {
                                 repository.toggleSaved(uid, title, profileEmail)
                                 notify("Saved items updated.")
                             } catch (error: Exception) {
                                 notify(repository.explainAccountError(error))
-                            } finally {
-                                isWorking = false
                             }
                         }
                     },

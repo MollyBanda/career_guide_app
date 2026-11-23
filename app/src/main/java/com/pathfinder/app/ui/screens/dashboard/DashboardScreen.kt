@@ -73,7 +73,7 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 title,sub,cat->onOpenDetails(title,sub,cat,"Explore")
             },{
                 onNavigate("Profile")
-                },catalogItems)
+            },catalogItems,savedTitles,onToggleSave)
                   "Profile"->ProfileScreen(pad,{
                 onNavigate("SignIn")
             },notify,profileName,profileEmail,{
@@ -103,7 +103,9 @@ fun DashboardScreen(page:String,onNavigate:(String)->Unit,notify:(String)->Unit,
                 title,sub->onOpenDetails(title,sub,page,page)
             },{
                 onNavigate("Profile")
-            },catalogItems)
+            },catalogItems,{
+                onNavigate("Quiz")
+            })
                 else->when(role){
 
                       "Admin"->AdminDashboardScreen(pad,notify,{

@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AdminRoleTests {
-    @Test fun registrationOffersTheThreeSupportedAccountRoles() {
-        assertEquals(listOf("Student", "Counsellor", "Admin"), PathwiseInputValidation.registrationRoles)
+    @Test fun publicRegistrationOffersStudentAndCounsellorRolesOnly() {
+        assertEquals(listOf("Student", "Counsellor"), PathwiseInputValidation.registrationRoles)
     }
 }

@@ -24,7 +24,7 @@ import com.pathfinder.app.ui.theme.DashboardColors.Canvas
 import com.pathfinder.app.ui.theme.DashboardColors.Ink
 import com.pathfinder.app.ui.theme.DashboardColors.Line
 import com.pathfinder.app.ui.theme.DashboardColors.Muted
-import com.pathfinder.app.ui.screens.counsellor.*
+import java.util.UUID
 
 private data class PendingAdminReview(val title: String, val description: String, val category: String, val details: String)
 
@@ -46,6 +46,7 @@ fun AdminDashboardScreen(
     var showAnnouncementComposer by remember { mutableStateOf(false) }
     var announcementTitle by remember { mutableStateOf("") }
     var announcementMessage by remember { mutableStateOf("") }
+
     val reviews = remember {
         mutableStateListOf(
             PendingAdminReview(
@@ -62,16 +63,24 @@ fun AdminDashboardScreen(
             )
         )
     }
+
     val registries = listOf(
-        Triple("Careers", "Career descriptions and skills", "career"),
-        Triple("Universities", "Programmes and entry requirements", "university"),
-        Triple("Scholarships", "Awards and application deadlines", "scholarship"),
-        Triple("Assessments", "Assessment questions and guidance", "assessment")
+        Triple("University Management", "Universities and campus profiles", "university"),
+        Triple("University Programme Management", "Academic awards, subjects, and durations", "degree"),
+        Triple("Career Management", "Roles, pathways, and skills", "career"),
+        Triple("Scholarship Management", "Funding opportunities and deadlines", "scholarship"),
+        Triple("Internship Management", "Workplace placements and gainful experience", "internship"),
+        Triple("Training Management", "Skills bootcamps and online courses", "training"),
+        Triple("User Management", "Student and user accounts", "person")
     )
 
     Column(
-        Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState())
-            .background(Canvas).padding(horizontal = 16.dp, vertical = 11.dp)
+        Modifier
+            .fillMaxSize()
+            .padding(pad)
+            .verticalScroll(rememberScrollState())
+            .background(Canvas)
+            .padding(horizontal = 16.dp, vertical = 11.dp)
     ) {
         DashboardHeader("Admin Dashboard", onProfile = onProfile)
         Spacer(Modifier.height(12.dp))
@@ -82,7 +91,8 @@ fun AdminDashboardScreen(
         val vitals = listOf(
             "Student accounts" to studentAccounts.size.toString(),
             "Careers available" to catalogItems.count { it.category == "Careers" }.toString(),
-            "Universities available" to catalogItems.count { it.category == "Universities" && (it.id == "uni-malawi" || it.id.startsWith("uni-expanded-")) }.toString()
+            "Universities available" to catalogItems.count { it.category == "Universities" && (it.id == "uni-malawi" || it.id.startsWith("uni-expanded-")) }.toString(),
+            "Scholarships available" to catalogItems.count { it.category == "Scholarships" }.toString()
         )
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             if (maxWidth >= 560.dp) {
@@ -91,42 +101,37 @@ fun AdminDashboardScreen(
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    vitals.forEach { (label, value) -> VitalCard(label, value, Modifier.fillMaxWidth()) { selectedVital = label } }
+                    vitals.chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            row.forEach { (label, value) ->
+                                VitalCard(label, value, Modifier.weight(1f)) { selectedVital = label }
+                            }
+                        }
+                    }
                 }
             }
         }
 
         Spacer(Modifier.height(14.dp))
         SectionTitle("MANAGE REGISTRY", "Select a section to manage")
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            if (maxWidth >= 560.dp) {
-                Column {
-                    registries.chunked(2).forEach { rowItems ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            rowItems.forEach { (title, subtitle, icon) ->
-                                RegistryCard(title, subtitle, icon, Modifier.weight(1f)) {
-                                    registryFilter = registryCategory(title)
-                                    showManager = true
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                Column {
-                    registries.forEach { (title, subtitle, icon) ->
-                        RegistryCard(title, subtitle, icon, Modifier.fillMaxWidth()) {
-                            registryFilter = registryCategory(title)
-                            showManager = true
-                        }
+        Column {
+            registries.forEach { (title, subtitle, icon) ->
+                RegistryCard(title, subtitle, icon, Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                    if (title == "User Management") {
+                        selectedVital = "Student accounts"
+                    } else {
+                        registryFilter = registryCategory(title)
+                        showManager = true
                     }
                 }
             }
         }
+
         OutlinedButton(
             onClick = { registryFilter = null; showManager = true },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-        ) { Text("Manage all catalogue items", fontSize = 15.sp) }
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            shape = RoundedCornerShape(10.dp)
+        ) { Text("Manage All Catalogue Items", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
 
         Spacer(Modifier.height(14.dp))
         SectionTitle("PENDING REVIEWS", "${reviews.size} awaiting review")
@@ -149,47 +154,53 @@ fun AdminDashboardScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Blue)
-        ) { Text("Broadcast System Announcement", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+        ) { Text("Broadcast System Announcement", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
     }
 
     if (showManager) {
         AdminOpportunityManager(
-            catalogItems.filter { registryFilter == null || it.category == registryFilter },
-            onSaveOpportunity, onDeleteOpportunity, { showManager = false }
+            items = catalogItems.filter { registryFilter == null || it.category == registryFilter },
+            categoryFilter = registryFilter,
+            onSave = onSaveOpportunity,
+            onDelete = onDeleteOpportunity,
+            onClose = { showManager = false }
         )
     }
+
     selectedVital?.let { vital ->
         val entries = when (vital) {
             "Student accounts" -> studentAccounts.map { it.fullName to it.email }
             "Careers available" -> catalogItems.filter { it.category == "Careers" }.map { it.title to it.subtitle }
+            "Scholarships available" -> catalogItems.filter { it.category == "Scholarships" }.map { it.title to it.subtitle }
             else -> catalogItems.filter { it.category == "Universities" && (it.id == "uni-malawi" || it.id.startsWith("uni-expanded-")) }.map { it.title to it.subtitle }
         }
         AlertDialog(
             onDismissRequest = { selectedVital = null },
-            title = { Text("$vital (${entries.size})", fontSize = 20.sp) },
+            title = { Text("$vital (${entries.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
             text = {
                 if (entries.isEmpty()) {
-                    Text("No ${vital.lowercase()} to show yet.", color = Ink, fontSize = 16.sp)
+                    Text("No ${vital.lowercase()} to show yet.", color = Ink, fontSize = 14.sp)
                 } else {
                     Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
                         entries.forEach { (title, subtitle) ->
                             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                                Text(title, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                                Text(subtitle, color = Muted, fontSize = 14.sp, lineHeight = 19.sp)
+                                Text(title, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text(subtitle, color = Muted, fontSize = 12.sp, lineHeight = 17.sp)
                             }
                             HorizontalDivider(color = Line)
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { selectedVital = null }) { Text("Close", fontSize = 16.sp) } }
+            confirmButton = { TextButton(onClick = { selectedVital = null }) { Text("Close", fontSize = 14.sp) } }
         )
     }
+
     selectedReview?.let { review ->
         AlertDialog(
             onDismissRequest = { selectedReview = null },
             title = { Text(review.title) },
-            text = { Text(review.details, color = Muted, lineHeight = 21.sp) },
+            text = { Text(review.details, color = Muted, lineHeight = 20.sp) },
             confirmButton = {
                 TextButton(onClick = {
                     reviews.remove(review)
@@ -200,13 +211,14 @@ fun AdminDashboardScreen(
             dismissButton = { TextButton(onClick = { selectedReview = null }) { Text("Close") } }
         )
     }
+
     if (showAnnouncementComposer) {
         AlertDialog(
             onDismissRequest = { showAnnouncementComposer = false },
-            title = { Text("New system announcement") },
+            title = { Text("New System Announcement") },
             text = {
                 Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
-                    Text("Write an update for users of the app.", color = Ink, fontSize = 15.sp)
+                    Text("Write an update for all app users.", color = Ink, fontSize = 13.sp)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = announcementTitle,
@@ -243,32 +255,100 @@ fun AdminDashboardScreen(
     }
 }
 
-private fun registryCategory(title: String): String? = when (title) {
-    "Universities" -> "Universities"
-    "Scholarships" -> "Scholarships"
-    "Assessments" -> "Assessment"
+private fun registryCategory(title: String): String? = when {
+    title.contains("University Programme", ignoreCase = true) -> "Universities"
+    title.contains("University", ignoreCase = true) -> "Universities"
+    title.contains("Scholarship", ignoreCase = true) -> "Scholarships"
+    title.contains("Internship", ignoreCase = true) -> "Internships"
+    title.contains("Training", ignoreCase = true) -> "Training"
+    title.contains("Assessment", ignoreCase = true) -> "Assessment"
     else -> "Careers"
+}
+
+@Composable
+private fun SectionTitle(title: String, subtitle: String) {
+    Column(Modifier.padding(bottom = 6.dp)) {
+        Text(title, color = Blue, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
+        Text(subtitle, color = Muted, fontSize = 11.sp)
+    }
 }
 
 @Composable
 private fun VitalCard(label: String, value: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(modifier.clickable(onClick = onClick), shape = RoundedCornerShape(11.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, Line)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 10.dp)) {
-            Text(label, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(value, color = Blue, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Tap to view details", color = Muted, fontSize = 12.sp)
+            Text(label, color = Ink, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(value, color = Blue, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Tap to view details", color = Muted, fontSize = 10.sp)
         }
     }
 }
+
+@Composable
+private fun RegistryCard(title: String, subtitle: String, icon: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, Line)
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            FeatureIcon(icon)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(subtitle, color = Muted, fontSize = 11.sp)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Muted, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun ReviewCard(title: String, description: String, category: String, onReview: () -> Unit, onApprove: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, Line)
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Label(category.uppercase(), Color(0xFFE8EDFF), Blue)
+            Text(title, modifier = Modifier.padding(top = 6.dp), color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(description, color = Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onReview, modifier = Modifier.weight(1f).height(36.dp), shape = RoundedCornerShape(8.dp)) {
+                    Text("Review Details", fontSize = 11.sp)
+                }
+                Button(onClick = onApprove, modifier = Modifier.weight(1f).height(36.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Blue)) {
+                    Text("Approve Update", fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun AdminOpportunityManager(
     items: List<OpportunityEntity>,
+    categoryFilter: String?,
     onSave: (OpportunityEntity) -> Unit,
     onDelete: (OpportunityEntity) -> Unit,
     onClose: () -> Unit
 ) {
+    var searchQuery by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf<OpportunityEntity?>(null) }
     var deleteTarget by remember { mutableStateOf<OpportunityEntity?>(null) }
+
+    val filteredItems = remember(items, searchQuery) {
+        val q = searchQuery.trim()
+        if (q.isBlank()) items
+        else items.filter {
+            it.title.contains(q, ignoreCase = true) ||
+                    it.subtitle.contains(q, ignoreCase = true) ||
+                    it.category.contains(q, ignoreCase = true)
+        }
+    }
 
     if (editing != null) {
         OpportunityEditorDialog(
@@ -280,48 +360,73 @@ private fun AdminOpportunityManager(
         val target = deleteTarget!!
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete opportunity?") },
-            text = { Text("Delete " + target.title + " from the catalogue? Its bookmarks will also be removed.") },
+            title = { Text("Delete item?", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete '${target.title}' from the catalogue? This will also remove any user bookmarks for this item.") },
             confirmButton = {
-                TextButton(onClick = { onDelete(target); deleteTarget = null }) { Text("Delete") }
+                TextButton(onClick = { onDelete(target); deleteTarget = null }) { Text("Delete", color = Color(0xFFC93748)) }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } }
         )
     } else {
         AlertDialog(
             onDismissRequest = onClose,
-            title = { Text("Manage catalogue") },
+            title = { Text(if (categoryFilter != null) "Manage $categoryFilter" else "Manage Catalogue", fontWeight = FontWeight.Bold) },
             text = {
                 Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
-                    Text("Add or update career and opportunity information stored on this device.", color = Ink, fontSize = 14.sp)
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        placeholder = { Text("Search items...", fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Muted) },
+                        singleLine = true
+                    )
                     Button(
                         onClick = {
                             editing = OpportunityEntity(
-                                id = java.util.UUID.randomUUID().toString(),
+                                id = UUID.randomUUID().toString(),
                                 title = "",
-                                category = "Careers",
+                                category = categoryFilter ?: "Careers",
                                 subtitle = "",
                                 overview = ""
                             )
                         },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                    ) { Text("Add catalogue item") }
-                    items.forEach { item ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(item.title, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                Text(item.category, color = Ink, fontSize = 13.sp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                    ) { Text("Add New Record", fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+
+                    Spacer(Modifier.height(6.dp))
+
+                    if (filteredItems.isEmpty()) {
+                        Text("No matching items found.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
+                    } else {
+                        filteredItems.forEach { item ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Line)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(item.title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        Text("${item.category} · ${item.subtitle}", color = Muted, fontSize = 10.sp)
+                                    }
+                                    TextButton(onClick = { editing = item }, contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Edit", fontSize = 12.sp) }
+                                    TextButton(onClick = { deleteTarget = item }, contentPadding = PaddingValues(horizontal = 6.dp)) { Text("Delete", color = Color(0xFFC93748), fontSize = 12.sp) }
+                                }
                             }
-                            TextButton(onClick = { editing = item }) { Text("Edit") }
-                            TextButton(onClick = { deleteTarget = item }) { Text("Delete", color = Color(0xFFC93748)) }
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = onClose) { Text("Done") } }
+            confirmButton = { TextButton(onClick = onClose) { Text("Done", fontSize = 14.sp) } }
         )
     }
 }
+
 @Composable
 private fun OpportunityEditorDialog(
     initial: OpportunityEntity,
@@ -329,7 +434,7 @@ private fun OpportunityEditorDialog(
     onSave: (OpportunityEntity) -> Unit
 ) {
     val fields = remember(initial.id) {
-        androidx.compose.runtime.mutableStateListOf(
+        mutableStateListOf(
             initial.title, initial.category, initial.subtitle, initial.overview,
             initial.qualifications, initial.courses, initial.skills, initial.pathways,
             initial.provider, initial.requirements, initial.duration, initial.deadline, initial.applicationUrl
@@ -337,12 +442,13 @@ private fun OpportunityEditorDialog(
     }
     val labels = listOf(
         "Title", "Category (Careers, Universities, Scholarships, Training, Internships, Assessment)",
-        "Short description", "Overview", "Qualifications", "Courses or programmes", "Skills",
-        "Career pathways", "Provider", "Entry or eligibility requirements", "Duration", "Deadline", "Application link"
+        "Short description / subtitle", "Overview", "Qualifications", "Courses / University Programmes", "Skills",
+        "Career pathways", "Provider / Institution", "Entry or eligibility requirements", "Duration", "Deadline", "Official website / application link"
     )
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial.title.isBlank()) "Add catalogue item" else "Edit catalogue item") },
+        title = { Text(if (initial.title.isBlank()) "Add New Record" else "Edit Record", fontWeight = FontWeight.Bold) },
         text = {
             Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState())) {
                 labels.forEachIndexed { index, label ->
@@ -350,7 +456,7 @@ private fun OpportunityEditorDialog(
                         value = fields[index],
                         onValueChange = { fields[index] = it },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                        label = { Text(label, fontSize = 14.sp) },
+                        label = { Text(label, fontSize = 12.sp) },
                         minLines = if (index in 3..9) 2 else 1,
                         singleLine = index !in 3..9
                     )
@@ -364,15 +470,24 @@ private fun OpportunityEditorDialog(
                     category in setOf("Careers", "Universities", "Scholarships", "Training", "Internships", "Assessment")
                 ) {
                     onSave(initial.copy(
-                        title = fields[0].trim(), category = category, subtitle = fields[2].trim(), overview = fields[3].trim(),
-                        qualifications = fields[4].trim(), courses = fields[5].trim(), skills = fields[6].trim(),
-                        pathways = fields[7].trim(), provider = fields[8].trim(), requirements = fields[9].trim(),
-                        duration = fields[10].trim(), deadline = fields[11].trim(), applicationUrl = fields[12].trim(),
+                        title = fields[0].trim(),
+                        category = category,
+                        subtitle = fields[2].trim(),
+                        overview = fields[3].trim(),
+                        qualifications = fields[4].trim(),
+                        courses = fields[5].trim(),
+                        skills = fields[6].trim(),
+                        pathways = fields[7].trim(),
+                        provider = fields[8].trim(),
+                        requirements = fields[9].trim(),
+                        duration = fields[10].trim(),
+                        deadline = fields[11].trim(),
+                        applicationUrl = fields[12].trim(),
                         updatedAt = System.currentTimeMillis()
                     ))
                 }
-            }) { Text("Save") }
+            }) { Text("Save Record", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", fontSize = 14.sp) } }
     )
 }

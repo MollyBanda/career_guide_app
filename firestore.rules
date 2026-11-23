@@ -1,103 +1,45 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
+
+    // Helper function: verifies that the requesting user has the custom claim 'admin: true'
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
     }
 
-    function ownsUser(uid) {
-      return signedIn() && request.auth.uid == uid;
+    // Helper function: verifies that the requesting user is accessing their own user document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    function trustedAdmin() {
-      return signedIn() && request.auth.token.admin == true;
-    }
+    // User profiles & account data
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
 
-    match /users/{uid} {
-      allow read: if ownsUser(uid) || trustedAdmin();
-      allow create: if ownsUser(uid)
-        && request.resource.data.uid == uid
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.fullName is string
-        && request.resource.data.role in ['Student', 'Counsellor', 'Admin']
-        && request.resource.data.educationLevel is string
-        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'educationLevel', 'createdAt', 'updatedAt']);
-      allow update: if ownsUser(uid)
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.fullName is string
-        && request.resource.data.updatedAt is int
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'bio', 'educationSkills', 'careerPreferences', 'updatedAt']);
-      allow delete: if false;
-
-      match /savedItems/{itemId} {
-        allow read, delete: if ownsUser(uid);
-        allow create: if ownsUser(uid)
-          && request.resource.data.itemId == itemId
-          && request.resource.data.title is string
-          && request.resource.data.category in ['Careers', 'Scholarships', 'Universities', 'Training', 'Internships']
-          && request.resource.data.savedAt is int
-          && request.resource.data.keys().hasOnly(['itemId', 'title', 'category', 'savedAt']);
-        allow update: if false;
-      }
-
-      match /assessments/{assessmentId} {
-        allow read: if ownsUser(uid);
-        allow create: if ownsUser(uid)
-          && request.resource.data.assessmentId == assessmentId
-          && request.resource.data.answers is list
-          && request.resource.data.answers.size() == 5
-          && request.resource.data.resultSummary is string
-          && request.resource.data.completedAt is int
-          && request.resource.data.recommendations is list
-          && request.resource.data.keys().hasOnly(['assessmentId', 'resultSummary', 'answers', 'completedAt', 'recommendations']);
-        allow update, delete: if false;
-      }
-
-      match /recommendations/{recommendationId} {
-        allow read: if ownsUser(uid);
-        allow create: if ownsUser(uid)
-          && request.resource.data.assessmentId == recommendationId
-          && request.resource.data.careerPaths is list
-          && request.resource.data.createdAt is int
-          && request.resource.data.keys().hasOnly(['assessmentId', 'careerPaths', 'createdAt']);
-        allow update, delete: if false;
+      // Private user subcollections (saved items, assessment history, recommendations)
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
 
-    match /careers/{recordId} {
-      allow read: if signedIn();
-      allow write: if trustedAdmin();
-    }
-    match /universities/{recordId} {
-      allow read: if signedIn();
-      allow write: if trustedAdmin();
-    }
-    match /scholarships/{recordId} {
-      allow read: if signedIn();
-      allow write: if trustedAdmin();
-    }
-    match /training/{recordId} {
-      allow read: if signedIn();
-      allow write: if trustedAdmin();
-    }
-    match /internships/{recordId} {
-      allow read: if signedIn();
-      allow write: if trustedAdmin();
+    // Shared educational catalogue collection (Careers, Universities, Scholarships, Training, Internships, Assessment)
+    match /opportunities/{opportunityId} {
+      allow read: if true; // Public read access for students & anonymous visitors
+      allow create, update, delete: if isAdmin(); // Strictly restricted to verified admins with custom claims
     }
 
+    // Shared university programmes collection
+    match /university_programmes/{programmeId} {
+      allow read: if true; // Public read access for students
+      allow create, update, delete: if isAdmin(); // Strictly restricted to verified admins with custom claims
+    }
+
+    // System broadcast announcements collection
     match /announcements/{announcementId} {
-      allow read: if signedIn();
-      allow create: if trustedAdmin()
-        && request.resource.data.id == announcementId
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.title is string
-        && request.resource.data.message is string
-        && request.resource.data.createdAt is int
-        && request.resource.data.keys().hasOnly(['id', 'createdBy', 'title', 'message', 'createdAt']);
-      allow update, delete: if false;
+      allow read: if true; // Public read access for students
+      allow create, update, delete: if isAdmin(); // Strictly restricted to verified admins with custom claims
     }
   }
 }
